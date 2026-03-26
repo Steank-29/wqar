@@ -66,21 +66,9 @@ L.Icon.Default.mergeOptions({
 const storeLocations = [
   {
     id: 1,
-    name: 'Wqar Flagship Store',
-    address: '123 Luxury Avenue, Downtown Dubai, UAE',
-    coordinates: [25.2048, 55.2708],
-  },
-  {
-    id: 2,
-    name: 'Wqar Boutique',
-    address: '45 Beach Road, Jumeirah, Dubai',
-    coordinates: [25.2082, 55.2571],
-  },
-  {
-    id: 3,
-    name: 'Wqar Signature Store',
-    address: 'The Palm, Palm Jumeirah, Dubai',
-    coordinates: [25.1122, 55.1399],
+    name: 'Wqar Store',
+    address: 'Sousse, Tunisie',
+    coordinates: [35.8254, 10.6370],
   },
 ];
 
@@ -700,7 +688,7 @@ const Home = () => {
           }}
         >
           <MapContainer
-            center={[25.2048, 55.2708]}
+            center={[35.8254, 10.6370]}
             zoom={12}
             style={{ height: '100%', width: '100%' }}
             zoomControl={true}

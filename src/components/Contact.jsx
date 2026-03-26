@@ -197,7 +197,13 @@ const Contact = () => {
   };
 
   return (
-    <React.Fragment>
+    <Box
+      sx={{
+        bgcolor: '#F9F6F1',
+        minHeight: '100vh',
+        py: { xs: 4, sm: 6, md: 8 },
+      }}
+    >
       <Container maxWidth="md">
         <motion.div
           initial="hidden"
@@ -394,7 +400,7 @@ const Contact = () => {
           Thank you! We'll get back to you soon. 
         </Alert>
       </Snackbar>
-    </React.Fragment>
+    </Box>
   );
 };
 
