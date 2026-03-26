@@ -25,7 +25,7 @@ import {
   Visibility,
   VisibilityOff,
   Login as LoginIcon,
-  Business as BusinessIcon,
+  Person as BusinessIcon,
   Fingerprint as FingerprintIcon,
   Security as SecurityIcon,
 } from '@mui/icons-material';
@@ -347,7 +347,7 @@ const Login = () => {
                   display: 'block',
                 }}
               >
-                WELCOME BACK
+                Login Portal
               </Typography>
               
               <Typography
@@ -527,118 +527,6 @@ const Login = () => {
                     {loading ? 'Authenticating...' : 'Sign In'}
                   </LoginButton>
 
-                  {/* Demo Access (Company-level feature) */}
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Button
-                      variant="text"
-                      onClick={handleDemoLogin}
-                      disabled={loading}
-                      sx={{
-                        fontFamily: 'Oswald, sans-serif',
-                        fontSize: '13px',
-                        color: alpha('#1A1A1A', 0.5),
-                        textTransform: 'none',
-                        '&:hover': {
-                          color: '#8C5A3C',
-                          backgroundColor: 'transparent',
-                        },
-                      }}
-                      startIcon={<FingerprintIcon sx={{ fontSize: 16 }} />}
-                    >
-                      Demo Access
-                    </Button>
-                  </Box>
-
-                  <Divider sx={{ my: 2 }}>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        fontFamily: 'Oswald, sans-serif',
-                        color: alpha('#1A1A1A', 0.4),
-                        px: 2,
-                      }}
-                    >
-                      OR
-                    </Typography>
-                  </Divider>
-
-                  {/* Social Login Options */}
-                  <Box sx={{ display: 'flex', gap: 2, flexDirection: 'column' }}>
-                    <SocialButton
-                      fullWidth
-                      startIcon={
-                        <img
-                          src="https://www.google.com/favicon.ico"
-                          alt="Google"
-                          style={{ width: 20, height: 20 }}
-                        />
-                      }
-                      disabled={loading}
-                    >
-                      Continue with Google
-                    </SocialButton>
-                    
-                    <SocialButton
-                      fullWidth
-                      startIcon={
-                        <img
-                          src="https://github.com/favicon.ico"
-                          alt="GitHub"
-                          style={{ width: 20, height: 20 }}
-                        />
-                      }
-                      disabled={loading}
-                    >
-                      Continue with GitHub
-                    </SocialButton>
-                  </Box>
-
-                  {/* Sign Up Link */}
-                  <Box sx={{ textAlign: 'center', mt: 2 }}>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        fontFamily: 'Oswald, sans-serif',
-                        color: alpha('#1A1A1A', 0.6),
-                      }}
-                    >
-                      Don't have an account?{' '}
-                      <Link
-                        href="/register"
-                        sx={{
-                          color: '#8C5A3C',
-                          textDecoration: 'none',
-                          fontWeight: 600,
-                          '&:hover': {
-                            textDecoration: 'underline',
-                          },
-                        }}
-                      >
-                        Create Account
-                      </Link>
-                    </Typography>
-                  </Box>
-
-                  {/* Company Trust Badge */}
-                  <Box sx={{ textAlign: 'center', mt: 2 }}>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        fontFamily: 'Oswald, sans-serif',
-                        color: alpha('#1A1A1A', 0.4),
-                        fontSize: '11px',
-                        letterSpacing: '0.5px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 1,
-                      }}
-                    >
-                      <span>🔒</span>
-                      Protected by enterprise-grade encryption
-                      <span>🔒</span>
-                    </Typography>
-                  </Box>
                 </Box>
               </form>
             </motion.div>
