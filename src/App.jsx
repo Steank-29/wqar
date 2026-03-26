@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import Contact from './components/Contact';
 import Home from './components/Home';
+import Login from './components/Login';
 import ProductDetail from './components/ProductDetail';
 import './App.css';
 
@@ -14,6 +15,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/product/:id" element={<ProductDetail />} />
+          <Route path="/login" element={<Login />} />
         </Routes>
       </Layout>
     </Router>
