@@ -1,0 +1,121 @@
+{
+  "navbar": {
+    "home": "الرئيسية",
+    "shopAll": "تسوق الكل",
+    "wqar": "وقار",
+    "contact": "اتصل بنا",
+    "search": "بحث",
+    "searchPlaceholder": "ابحث عن المنتجات...",
+    "login": "تسجيل الدخول",
+    "signUp": "إنشاء حساب",
+    "loginSignUp": "تسجيل الدخول / إنشاء حساب",
+    "cart": "السلة",
+    "newArrivals": "الوافدون الجدد",
+    "discoverSignature": "اكتشف عطرك المميز",
+    "inspiredByNature": "مستوحى من الطبيعة، مصنوع من أجلك",
+    "language": "اللغة",
+    "english": "English",
+    "arabic": "العربية",
+    "french": "Français",
+    "copyright": "© 2026، وقار، جميع الحقوق محفوظة"
+  },
+  "hero": {
+    "subtitle": "مجموعة وقار",
+    "title1": "من الصحراء،",
+    "title2": "إلى الساحل",
+    "description": "عطور تحكي قصص الأرض والبحر — تجمع بين جانبي بلد واحد من خلال العطور الحرفية."
+  },
+  "signature": {
+    "title": "مجموعة مميزة",
+    "subtitle": "عطور مختارة"
+  },
+  "badges": {
+    "award": "عطور حائزة على جوائز",
+    "bestseller": "مجموعة الأكثر مبيعاً",
+    "rating": "متوسط التقييم 4.8+"
+  },
+  "quickActions": {
+    "viewCollection": "عرض المجموعة الكاملة"
+  },
+  "storeLocator": {
+    "findUs": "جد موقعنا",
+    "title": "مواقعنا",
+    "description": "زورونا في أحد متاجرنا في جميع أنحاء المدينة",
+    "locations": "مواقع المتاجر",
+    "getDirections": "احصل على الاتجاهات"
+  },
+  "productCard": {
+    "freeShipping": "شحن مجاني • توصيل سريع",
+    "artisanal": "حرفي • مكونات طبيعية • خالٍ من القسوة",
+    "addToBag": "أضف إلى الحقيبة",
+    "addToWishlist": "أضف إلى قائمة الرغبات",
+    "removeFromWishlist": "إزالة من قائمة الرغبات",
+    "reviews": "تقييمات",
+    "off": "خصم"
+  },
+   "login": {
+    "portal": "بوابة تسجيل الدخول",
+    "title": "تسجيل الدخول",
+    "description": "قم بالوصول إلى حسابك لإدارة الطلبات وتتبع الشحنات واكتشاف العطور الحصرية",
+    "security": "حماية على مستوى المؤسسات",
+    "email": "البريد الإلكتروني",
+    "emailPlaceholder": "hello@company.com",
+    "password": "كلمة المرور",
+    "passwordPlaceholder": "أدخل كلمة المرور",
+    "rememberMe": "تذكرني",
+    "forgotPassword": "نسيت كلمة المرور؟",
+    "signIn": "تسجيل الدخول",
+    "authenticating": "جاري التحقق...",
+    "success": "تم تسجيل الدخول بنجاح! جاري إعادة التوجيه...",
+    "errors": {
+      "emailRequired": "البريد الإلكتروني مطلوب",
+      "emailInvalid": "يرجى إدخال بريد إلكتروني صحيح",
+      "passwordRequired": "كلمة المرور مطلوبة",
+      "passwordMinLength": "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
+      "loginFailed": "فشل تسجيل الدخول",
+      "invalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+      "tooManyAttempts": "محاولات كثيرة فاشلة. يرجى المحاولة لاحقاً",
+      "accountLocked": "تم قفل حسابك. يرجى الاتصال بالدعم"
+    }
+  },
+  "footer": {
+    "brandDescription": "نقدم لكم أرقى العطور التي تروي قصتكم. حيث يصبح كل عطر بصمة مميزة.",
+    "connectWithUs": "تواصل معنا",
+    "getDiscount": "احصل على خصم 10%",
+    "subscribeOffer": "اشترك للحصول على عروض حصرية والوافدين الجدد",
+    "emailPlaceholder": "أدخل بريدك الإلكتروني",
+    "copyright": "وقار. جميع الحقوق محفوظة.",
+    "privacy": "الخصوصية",
+    "terms": "الشروط",
+    "support": "الدعم",
+    "tagline": "رائحة الأناقة ✨",
+    "subscribeSuccess": "تم الاشتراك بنجاح! 🎉 تحقق من بريدك الإلكتروني للحصول على خصم 10%"
+  },
+  "contact": {
+    "overline": "اتصل بنا",
+    "title": "لنتحدث",
+    "description": "هل لديك سؤال عن عطورنا؟ يسعدنا سماع رأيك.",
+    "name": "الاسم",
+    "namePlaceholder": "أحمد محمد",
+    "email": "البريد الإلكتروني",
+    "emailPlaceholder": "hello@wqar.com",
+    "phone": "رقم الهاتف",
+    "phonePlaceholder": "+966 5X XXX XXXX",
+    "message": "رسالتك",
+    "messagePlaceholder": "أخبرنا عن تفضيلاتك للعطور أو أي أسئلة لديك...",
+    "sendMessage": "إرسال الرسالة",
+    "sending": "جاري الإرسال...",
+    "responseTime": "نرد عادةً خلال 24 ساعة",
+    "successMessage": "شكراً لك! سنتواصل معك قريباً.",
+    "errors": {
+      "nameRequired": "الاسم مطلوب",
+      "nameMinLength": "الاسم يجب أن يكون حرفين على الأقل",
+      "emailRequired": "البريد الإلكتروني مطلوب",
+      "emailInvalid": "يرجى إدخال بريد إلكتروني صحيح",
+      "phoneRequired": "رقم الهاتف مطلوب",
+      "phoneInvalid": "يرجى إدخال رقم هاتف صحيح",
+      "messageRequired": "الرسالة مطلوبة",
+      "messageMinLength": "الرسالة يجب أن تكون 10 أحرف على الأقل"
+    }
+  }
+}

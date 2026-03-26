@@ -16,7 +16,6 @@ import {
   IconButton,
   FormControlLabel,
   Checkbox,
-  Divider,
   Link,
 } from '@mui/material';
 import {
@@ -26,13 +25,14 @@ import {
   VisibilityOff,
   Login as LoginIcon,
   Person as BusinessIcon,
-  Fingerprint as FingerprintIcon,
   Security as SecurityIcon,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
+import { useLanguage } from '../components/LanguageContext';
 import '@fontsource/oswald';
 
-// Styled Components (maintaining consistency with contact form)
+// Styled Components with RTL support
 const LoginContainer = styled(Paper)(({ theme }) => ({
   borderRadius: '32px',
   padding: theme.spacing(5),
@@ -106,24 +106,9 @@ const LoginButton = styled(Button)(({ theme }) => ({
   },
 }));
 
-const SocialButton = styled(Button)(({ theme }) => ({
-  borderRadius: '60px',
-  padding: '10px 20px',
-  fontFamily: 'Oswald, sans-serif',
-  fontSize: '14px',
-  textTransform: 'none',
-  border: `1.5px solid ${alpha('#8C5A3C', 0.2)}`,
-  color: '#1A1A1A',
-  backgroundColor: '#FFFFFF',
-  transition: 'all 0.3s ease',
-  '&:hover': {
-    borderColor: '#8C5A3C',
-    backgroundColor: alpha('#8C5A3C', 0.05),
-    transform: 'translateY(-1px)',
-  },
-}));
-
 const Login = () => {
+  const { t } = useTranslation();
+  const { isRTL, currentLanguage } = useLanguage();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
@@ -155,22 +140,22 @@ const Login = () => {
     }
   };
 
-  // Form validation
+  // Form validation with translations
   const validateForm = () => {
     const newErrors = {};
     
     // Email validation
     if (!formData.email.trim()) {
-      newErrors.email = 'Email address is required';
+      newErrors.email = t('login.errors.emailRequired');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = t('login.errors.emailInvalid');
     }
     
     // Password validation
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = t('login.errors.passwordRequired');
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = t('login.errors.passwordMinLength');
     }
     
     setErrors(newErrors);
@@ -206,7 +191,7 @@ const Login = () => {
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
+        throw new Error(data.message || t('login.errors.loginFailed'));
       }
       
       // Store auth token securely
@@ -221,25 +206,25 @@ const Login = () => {
       // Show success message
       setSnackbar({
         open: true,
-        message: 'Login successful! Redirecting...',
+        message: t('login.success'),
         severity: 'success',
       });
       
       // Redirect after successful login
       setTimeout(() => {
-        window.location.href = '/dashboard'; // or your dashboard route
+        window.location.href = '/dashboard';
       }, 1500);
       
     } catch (error) {
       console.error('Login error:', error);
       
       // Handle different error scenarios
-      let errorMessage = 'Invalid email or password';
+      let errorMessage = t('login.errors.invalidCredentials');
       
       if (error.message.includes('too many attempts')) {
-        errorMessage = 'Too many failed attempts. Please try again later.';
+        errorMessage = t('login.errors.tooManyAttempts');
       } else if (error.message.includes('account locked')) {
-        errorMessage = 'Your account has been locked. Please contact support.';
+        errorMessage = t('login.errors.accountLocked');
       }
       
       setSnackbar({
@@ -257,22 +242,7 @@ const Login = () => {
 
   // Handle forgot password
   const handleForgotPassword = () => {
-    // Navigate to forgot password page or open modal
     window.location.href = '/forgot-password';
-  };
-
-  // Handle demo login (for development/demo purposes)
-  const handleDemoLogin = () => {
-    setFormData({
-      email: 'demo@company.com',
-      password: 'demo123',
-      rememberMe: false,
-    });
-    setSnackbar({
-      open: true,
-      message: 'Demo credentials loaded',
-      severity: 'info',
-    });
   };
 
   // Animation variants
@@ -308,6 +278,7 @@ const Login = () => {
         py: { xs: 4, sm: 6, md: 8 },
         display: 'flex',
         alignItems: 'center',
+        direction: isRTL ? 'rtl' : 'ltr',
       }}
     >
       <Container maxWidth="sm">
@@ -347,7 +318,7 @@ const Login = () => {
                   display: 'block',
                 }}
               >
-                Login Portal
+                {t('login.portal')}
               </Typography>
               
               <Typography
@@ -361,7 +332,7 @@ const Login = () => {
                   letterSpacing: '-0.5px',
                 }}
               >
-                Sign In
+                {t('login.title')}
               </Typography>
               
               <Typography
@@ -373,7 +344,7 @@ const Login = () => {
                   lineHeight: 1.5,
                 }}
               >
-                Access your account to manage orders, track shipments, and discover exclusive fragrances
+                {t('login.description')}
               </Typography>
             </Box>
 
@@ -402,7 +373,7 @@ const Login = () => {
                   letterSpacing: '0.5px',
                 }}
               >
-                Enterprise-grade security
+                {t('login.security')}
               </Typography>
             </Box>
 
@@ -413,10 +384,10 @@ const Login = () => {
                   {/* Email Field */}
                   <StyledTextField
                     fullWidth
-                    label="Email Address"
+                    label={t('login.email')}
                     name="email"
                     type="email"
-                    placeholder="hello@company.com"
+                    placeholder={t('login.emailPlaceholder')}
                     value={formData.email}
                     onChange={handleChange}
                     error={!!errors.email}
@@ -434,10 +405,10 @@ const Login = () => {
                   {/* Password Field */}
                   <StyledTextField
                     fullWidth
-                    label="Password"
+                    label={t('login.password')}
                     name="password"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="Enter your password"
+                    placeholder={t('login.passwordPlaceholder')}
                     value={formData.password}
                     onChange={handleChange}
                     error={!!errors.password}
@@ -471,6 +442,7 @@ const Login = () => {
                       alignItems: 'center',
                       flexWrap: 'wrap',
                       gap: 1,
+                      flexDirection: isRTL ? 'row-reverse' : 'row',
                     }}
                   >
                     <FormControlLabel
@@ -495,7 +467,7 @@ const Login = () => {
                             color: alpha('#1A1A1A', 0.7),
                           }}
                         >
-                          Remember me
+                          {t('login.rememberMe')}
                         </Typography>
                       }
                     />
@@ -514,7 +486,7 @@ const Login = () => {
                         },
                       }}
                     >
-                      Forgot password?
+                      {t('login.forgotPassword')}
                     </Link>
                   </Box>
 
@@ -524,9 +496,8 @@ const Login = () => {
                     disabled={loading}
                     startIcon={loading ? null : <LoginIcon />}
                   >
-                    {loading ? 'Authenticating...' : 'Sign In'}
+                    {loading ? t('login.authenticating') : t('login.signIn')}
                   </LoginButton>
-
                 </Box>
               </form>
             </motion.div>

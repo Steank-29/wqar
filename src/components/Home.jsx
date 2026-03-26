@@ -22,6 +22,8 @@ import {
 import { motion } from 'framer-motion';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Autoplay } from 'swiper/modules';
+import { useTranslation } from 'react-i18next';
+import { useLanguage } from './LanguageContext';
 import '@fontsource/oswald';
 import 'swiper/css';
 import 'swiper/css/navigation';
@@ -62,27 +64,41 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
 });
 
-// Store locations data (random locations in Dubai for demo)
+// Store locations data
 const storeLocations = [
   {
     id: 1,
     name: 'Wqar Store',
     address: 'Sousse, Tunisie',
+    addressAr: 'سوسة، تونس',
+    addressFr: 'Sousse, Tunisie',
     coordinates: [35.8254, 10.6370],
   },
 ];
 
+const badgeColors = {
+  'Bestseller': { bg: '#6B4423', color: '#FFF8F0' },
+  'New Arrival': { bg: '#2C6E61', color: '#F0FAF7' },
+  'Limited Edition': { bg: '#1A1A1A', color: '#F5F0EA' },
+  'Summer Edit': { bg: '#C4884A', color: '#FFF8F0' },
+  "Editor's Pick": { bg: '#4A3F6B', color: '#F5F0FA' },
+  'Customer Favorite': { bg: '#6B4423', color: '#FFF8F0' },
+  'Artisan Blend': { bg: '#5C4A32', color: '#FFF8F0' },
+};
+
 const products = [
   {
     id: 1,
-    name: 'Desert Oud',
-    description: 'Warm amber, sandalwood, and rare oud blend. A sophisticated fragrance that captures the essence of endless golden dunes.',
+    nameKey: 'products.desertOud.name',
+    nameAr: 'عود الصحراء',
+    descriptionKey: 'products.desertOud.description',
     price: 89,
     oldPrice: 120,
     image: desertOud,
     sizes: ['50ml', '100ml'],
     rating: 4.8,
     reviews: 124,
+    badgeKey: 'badgeNames.bestseller',
     badge: 'Bestseller',
     isNew: false,
     notes: { top: ['Saffron', 'Bergamot'], heart: ['Oud Wood', 'Amber'], base: ['Vanilla', 'Musk'] },
@@ -90,14 +106,16 @@ const products = [
   },
   {
     id: 2,
-    name: 'Coastal Breeze',
-    description: 'Fresh sea salt, bergamot, and white musk. A refreshing journey along pristine shorelines.',
+    nameKey: 'products.coastalBreeze.name',
+    nameAr: 'نسيم الساحل',
+    descriptionKey: 'products.coastalBreeze.description',
     price: 79,
     oldPrice: 110,
     image: coastalBreeze,
     sizes: ['50ml', '100ml'],
     rating: 4.9,
     reviews: 98,
+    badgeKey: 'badgeNames.newArrival',
     badge: 'New Arrival',
     isNew: true,
     notes: { top: ['Bergamot', 'Sea Salt'], heart: ['Jasmine', 'Marine'], base: ['White Musk', 'Ambergris'] },
@@ -105,14 +123,16 @@ const products = [
   },
   {
     id: 3,
-    name: 'Sahara Amber',
-    description: 'Rich amber, vanilla, and exotic spices. A warm embrace reminiscent of desert nights.',
+    nameKey: 'products.saharaAmber.name',
+    nameAr: 'عنبر الصحراء',
+    descriptionKey: 'products.saharaAmber.description',
     price: 94,
     oldPrice: 125,
     image: saharaAmber,
     sizes: ['50ml', '100ml'],
     rating: 4.7,
     reviews: 87,
+    badgeKey: 'badgeNames.limitedEdition',
     badge: 'Limited Edition',
     isNew: false,
     notes: { top: ['Cinnamon', 'Cardamom'], heart: ['Amber', 'Vanilla'], base: ['Benzoin', 'Sandalwood'] },
@@ -120,14 +140,16 @@ const products = [
   },
   {
     id: 4,
-    name: 'Mediterranean Salt',
-    description: 'Crisp ocean air, jasmine, and driftwood. An aromatic voyage across turquoise waters.',
+    nameKey: 'products.mediterraneanSalt.name',
+    nameAr: 'ملح المتوسط',
+    descriptionKey: 'products.mediterraneanSalt.description',
     price: 84,
     oldPrice: 115,
     image: mediterraneanSalt,
     sizes: ['50ml', '100ml'],
     rating: 4.8,
     reviews: 112,
+    badgeKey: 'badgeNames.summerEdit',
     badge: 'Summer Edit',
     isNew: false,
     notes: { top: ['Lemon', 'Rosemary'], heart: ['Jasmine', 'Fig Leaf'], base: ['Driftwood', 'Cedar'] },
@@ -135,14 +157,16 @@ const products = [
   },
   {
     id: 5,
-    name: 'Midnight Dune',
-    description: 'Dark leather, smoky incense, and cedarwood. A mysterious scent for the night.',
+    nameKey: 'products.midnightDune.name',
+    nameAr: 'كثبان منتصف الليل',
+    descriptionKey: 'products.midnightDune.description',
     price: 99,
     oldPrice: 135,
     image: midnightDune,
     sizes: ['50ml', '100ml'],
     rating: 4.9,
     reviews: 156,
+    badgeKey: 'badgeNames.editorsPick',
     badge: "Editor's Pick",
     isNew: false,
     notes: { top: ['Incense', 'Saffron'], heart: ['Leather', 'Tobacco'], base: ['Cedarwood', 'Amber'] },
@@ -150,14 +174,16 @@ const products = [
   },
   {
     id: 6,
-    name: 'Coral Reef',
-    description: 'Tropical fruits, sea moss, and coral flower. A vibrant underwater paradise.',
+    nameKey: 'products.coralReef.name',
+    nameAr: 'الشعاب المرجانية',
+    descriptionKey: 'products.coralReef.description',
     price: 74,
     oldPrice: 105,
     image: coralReef,
     sizes: ['50ml', '100ml'],
     rating: 4.6,
     reviews: 73,
+    badgeKey: 'badgeNames.newArrival',
     badge: 'New Arrival',
     isNew: true,
     notes: { top: ['Tropical Fruits', 'Mandarin'], heart: ['Coral Flower', 'Sea Moss'], base: ['Musk', 'Ambergris'] },
@@ -165,14 +191,16 @@ const products = [
   },
   {
     id: 7,
-    name: 'Golden Sand',
-    description: 'Warm vanilla, tonka bean, and sun-kissed musk. A radiant beachside glow.',
+    nameKey: 'products.goldenSand.name',
+    nameAr: 'الرمال الذهبية',
+    descriptionKey: 'products.goldenSand.description',
     price: 86,
     oldPrice: 118,
     image: goldenSand,
     sizes: ['50ml', '100ml'],
     rating: 4.8,
     reviews: 104,
+    badgeKey: 'badgeNames.customerFavorite',
     badge: 'Customer Favorite',
     isNew: false,
     notes: { top: ['Coconut', 'Bergamot'], heart: ['Vanilla', 'Tonka Bean'], base: ['Sandalwood', 'Caramel'] },
@@ -180,14 +208,16 @@ const products = [
   },
   {
     id: 8,
-    name: 'Salt & Stone',
-    description: 'Mineral accord, sage, and sea salt crystals. An earthy coastal mineral blend.',
+    nameKey: 'products.saltStone.name',
+    nameAr: 'الملح والحجر',
+    descriptionKey: 'products.saltStone.description',
     price: 81,
     oldPrice: 112,
     image: saltStone,
     sizes: ['50ml', '100ml'],
     rating: 4.7,
     reviews: 91,
+    badgeKey: 'badgeNames.artisanBlend',
     badge: 'Artisan Blend',
     isNew: false,
     notes: { top: ['Sea Salt', 'Citrus'], heart: ['Sage', 'Lavender'], base: ['Vetiver', 'Oakmoss'] },
@@ -195,18 +225,10 @@ const products = [
   },
 ];
 
-const badgeColors = {
-  'Bestseller':        { bg: '#6B4423', color: '#FFF8F0' },
-  'New Arrival':       { bg: '#2C6E61', color: '#F0FAF7' },
-  'Limited Edition':   { bg: '#1A1A1A', color: '#F5F0EA' },
-  'Summer Edit':       { bg: '#C4884A', color: '#FFF8F0' },
-  "Editor's Pick":     { bg: '#4A3F6B', color: '#F5F0FA' },
-  'Customer Favorite': { bg: '#6B4423', color: '#FFF8F0' },
-  'Artisan Blend':     { bg: '#5C4A32', color: '#FFF8F0' },
-};
-
 const Home = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const { isRTL, currentLanguage } = useLanguage();
   const [wishlisted, setWishlisted] = useState({});
   const [activeIndex, setActiveIndex] = useState(0);
   const swiperRef = useRef(null);
@@ -216,12 +238,20 @@ const Home = () => {
     setWishlisted(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
+  // Helper function to get translated text with fallback
+  const getTranslatedText = (enText, arText, frText) => {
+    if (currentLanguage === 'ar') return arText;
+    if (currentLanguage === 'fr') return frText;
+    return enText;
+  };
+
   return (
     <Box
       sx={{
         bgcolor: '#F9F6F1',
         minHeight: '100vh',
         fontFamily: 'Oswald, sans-serif',
+        direction: isRTL ? 'rtl' : 'ltr',
         backgroundImage: `radial-gradient(ellipse at 20% 0%, rgba(184,124,79,0.07) 0%, transparent 55%),
                           radial-gradient(ellipse at 80% 100%, rgba(107,68,35,0.06) 0%, transparent 55%)`,
       }}
@@ -269,7 +299,7 @@ const Home = () => {
               mb: 3,
             }}
           >
-            The Wqar Collection
+            {t('hero.subtitle')}
           </Typography>
 
           <Typography
@@ -285,7 +315,7 @@ const Home = () => {
               mb: 1,
             }}
           >
-            From the Desert,
+            {t('hero.title1')}
           </Typography>
           <Typography
             variant="h1"
@@ -304,7 +334,7 @@ const Home = () => {
               mb: 5,
             }}
           >
-            to the Coast
+            {t('hero.title2')}
           </Typography>
 
           <Typography
@@ -319,7 +349,7 @@ const Home = () => {
               lineHeight: 1.7,
             }}
           >
-            Scents that tell stories of land and sea — bridging two sides of a country through artisanal fragrance.
+            {t('hero.description')}
           </Typography>
         </motion.div>
 
@@ -361,7 +391,7 @@ const Home = () => {
                 fontWeight: 600,
               }}
             >
-              Signature Collection
+              {t('signature.title')}
             </Typography>
             <Typography
               sx={{
@@ -374,7 +404,7 @@ const Home = () => {
                 textTransform: 'uppercase',
               }}
             >
-              Curated Fragrances
+              {t('signature.subtitle')}
             </Typography>
             <Box
               sx={{
@@ -409,7 +439,7 @@ const Home = () => {
           >
             <EmojiEventsIcon sx={{ fontSize: 18, color: '#6B4423' }} />
             <Typography sx={{ fontFamily: 'Oswald', fontSize: '12px', fontWeight: 500 }}>
-              Award-Winning Scents
+              {t('badges.award')}
             </Typography>
           </Paper>
           <Paper
@@ -426,7 +456,7 @@ const Home = () => {
           >
             <WhatshotIcon sx={{ fontSize: 18, color: '#6B4423' }} />
             <Typography sx={{ fontFamily: 'Oswald', fontSize: '12px', fontWeight: 500 }}>
-              Bestseller Collection
+              {t('badges.bestseller')}
             </Typography>
           </Paper>
           <Paper
@@ -443,7 +473,7 @@ const Home = () => {
           >
             <TrendingUpIcon sx={{ fontSize: 18, color: '#6B4423' }} />
             <Typography sx={{ fontFamily: 'Oswald', fontSize: '12px', fontWeight: 500 }}>
-              4.8+ Average Rating
+              {t('badges.rating')}
             </Typography>
           </Paper>
         </Stack>
@@ -492,6 +522,9 @@ const Home = () => {
                     onWishlist={(e) => toggleWishlist(e, product.id)}
                     onClick={() => navigate(`/product/${product.id}`)}
                     isActive={index === activeIndex}
+                    t={t}
+                    isRTL={isRTL}
+                    currentLanguage={currentLanguage}
                   />
                 </motion.div>
               </SwiperSlide>
@@ -520,7 +553,7 @@ const Home = () => {
               display: { xs: 'none', md: 'flex' },
             }}
           >
-            <ArrowBackIosNewIcon sx={{ fontSize: 20 }} />
+            {isRTL ? <ArrowForwardIosIcon sx={{ fontSize: 20 }} /> : <ArrowBackIosNewIcon sx={{ fontSize: 20 }} />}
           </IconButton>
 
           <IconButton
@@ -544,7 +577,7 @@ const Home = () => {
               display: { xs: 'none', md: 'flex' },
             }}
           >
-            <ArrowForwardIosIcon sx={{ fontSize: 20 }} />
+            {isRTL ? <ArrowBackIosNewIcon sx={{ fontSize: 20 }} /> : <ArrowForwardIosIcon sx={{ fontSize: 20 }} />}
           </IconButton>
 
           {/* Progress Bar */}
@@ -569,7 +602,7 @@ const Home = () => {
             sx={{
               position: 'absolute',
               bottom: 10,
-              right: 20,
+              [isRTL ? 'left' : 'right']: 20,
               fontSize: '12px',
               color: alpha('#1A1A1A', 0.5),
               fontFamily: 'Oswald',
@@ -609,12 +642,12 @@ const Home = () => {
               },
             }}
           >
-            View Full Collection
+            {t('quickActions.viewCollection')}
           </Button>
         </Stack>
       </Container>
 
-      {/* ── STORE LOCATOR MAP SECTION (SIMPLE VERSION) ── */}
+      {/* ── STORE LOCATOR MAP SECTION ── */}
       <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 2, md: 2, lg: 2 }, py: { xs: 2, sm: 2, md: 2 } }}>
         {/* Section Header */}
         <Box sx={{ mb: { xs: 4, sm: 5, md: 6 }, textAlign: 'center' }}>
@@ -635,7 +668,7 @@ const Home = () => {
                 fontWeight: 600,
               }}
             >
-              Find Us
+              {t('storeLocator.findUs')}
             </Typography>
             <Typography
               sx={{
@@ -648,7 +681,7 @@ const Home = () => {
                 textTransform: 'uppercase',
               }}
             >
-              Our Locations
+              {t('storeLocator.title')}
             </Typography>
             <Typography
               sx={{
@@ -661,7 +694,7 @@ const Home = () => {
                 mb: 3,
               }}
             >
-              Visit us at one of our boutique locations across the city
+              {t('storeLocator.description')}
             </Typography>
             <Box
               sx={{
@@ -723,7 +756,7 @@ const Home = () => {
                         mb: 1,
                       }}
                     >
-                      {store.address}
+                      {currentLanguage === 'ar' ? store.addressAr : store.address}
                     </Typography>
                     <Button
                       size="small"
@@ -739,7 +772,7 @@ const Home = () => {
                         },
                       }}
                     >
-                      Get Directions
+                      {t('storeLocator.getDirections')}
                     </Button>
                   </Box>
                 </Popup>
@@ -752,7 +785,7 @@ const Home = () => {
             sx={{
               position: 'absolute',
               bottom: 16,
-              right: 16,
+              [isRTL ? 'left' : 'right']: 16,
               zIndex: 1000,
               bgcolor: 'rgba(255,255,255,0.95)',
               backdropFilter: 'blur(8px)',
@@ -767,7 +800,7 @@ const Home = () => {
           >
             <LocationOnIcon sx={{ fontSize: 16, color: '#6B4423' }} />
             <Typography sx={{ fontFamily: 'Oswald', fontSize: '11px', fontWeight: 600 }}>
-              {storeLocations.length} Store Locations
+              {storeLocations.length} {t('storeLocator.locations')}
             </Typography>
           </Box>
         </Paper>
@@ -817,7 +850,7 @@ const Home = () => {
                       color: alpha('#1A1A1A', 0.6),
                     }}
                   >
-                    {store.address}
+                    {currentLanguage === 'ar' ? store.addressAr : store.address}
                   </Typography>
                 </Box>
               </Stack>
@@ -830,11 +863,137 @@ const Home = () => {
 };
 
 /* ── PRODUCT CARD COMPONENT ── */
-const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive }) => {
+const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive, t, isRTL, currentLanguage }) => {
   const [hovered, setHovered] = useState(false);
   const [selectedSize, setSelectedSize] = useState(null);
   const badge = badgeColors[product.badge] || { bg: '#6B4423', color: '#FFF8F0' };
   const discount = Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100);
+
+  // Get translated badge text
+  const getBadgeText = () => {
+    if (currentLanguage === 'ar') {
+      const badgeMap = {
+        'Bestseller': 'الأكثر مبيعاً',
+        'New Arrival': 'وافد جديد',
+        'Limited Edition': 'إصدار محدود',
+        'Summer Edit': 'تشكيلة الصيف',
+        "Editor's Pick": 'اختيار المحررين',
+        'Customer Favorite': 'المفضل لدى العملاء',
+        'Artisan Blend': 'مزيج حرفي',
+      };
+      return badgeMap[product.badge] || product.badge;
+    }
+    if (currentLanguage === 'fr') {
+      const badgeMap = {
+        'Bestseller': 'Meilleure Vente',
+        'New Arrival': 'Nouveauté',
+        'Limited Edition': 'Édition Limitée',
+        'Summer Edit': 'Édition Été',
+        "Editor's Pick": 'Choix de la Rédaction',
+        'Customer Favorite': 'Favori des Clients',
+        'Artisan Blend': 'Mélange Artisanal',
+      };
+      return badgeMap[product.badge] || product.badge;
+    }
+    return product.badge;
+  };
+
+  // Get translated season
+  const getTranslatedSeason = (season) => {
+    const seasonMap = {
+      'Spring': { ar: 'الربيع', fr: 'Printemps' },
+      'Summer': { ar: 'الصيف', fr: 'Été' },
+      'Fall': { ar: 'الخريف', fr: 'Automne' },
+      'Winter': { ar: 'الشتاء', fr: 'Hiver' },
+    };
+    if (currentLanguage === 'ar') return seasonMap[season]?.ar || season;
+    if (currentLanguage === 'fr') return seasonMap[season]?.fr || season;
+    return season;
+  };
+
+  // Get translated fragrance note
+  const getTranslatedNote = (note) => {
+    const noteMap = {
+      'Saffron': { ar: 'الزعفران', fr: 'Safran' },
+      'Bergamot': { ar: 'البرغموت', fr: 'Bergamote' },
+      'Oud Wood': { ar: 'خشب العود', fr: 'Bois d\'Oud' },
+      'Amber': { ar: 'العنبر', fr: 'Ambre' },
+      'Vanilla': { ar: 'الفانيليا', fr: 'Vanille' },
+      'Musk': { ar: 'المسك', fr: 'Musc' },
+      'Sea Salt': { ar: 'ملح البحر', fr: 'Sel Marin' },
+      'Jasmine': { ar: 'الياسمين', fr: 'Jasmin' },
+      'Marine': { ar: 'البحر', fr: 'Marin' },
+      'White Musk': { ar: 'المسك الأبيض', fr: 'Musc Blanc' },
+      'Ambergris': { ar: 'العنبر الرمادي', fr: 'Ambre Gris' },
+      'Cinnamon': { ar: 'القرفة', fr: 'Cannelle' },
+      'Cardamom': { ar: 'الهيل', fr: 'Cardamome' },
+      'Benzoin': { ar: 'البنزوين', fr: 'Benjoin' },
+      'Sandalwood': { ar: 'خشب الصندل', fr: 'Bois de Santal' },
+      'Lemon': { ar: 'الليمون', fr: 'Citron' },
+      'Rosemary': { ar: 'إكليل الجبل', fr: 'Romarin' },
+      'Fig Leaf': { ar: 'ورق التين', fr: 'Feuille de Figuier' },
+      'Driftwood': { ar: 'خشب الطافي', fr: 'Bois Flotté' },
+      'Cedar': { ar: 'الأرز', fr: 'Cèdre' },
+      'Incense': { ar: 'البخور', fr: 'Encens' },
+      'Leather': { ar: 'الجلود', fr: 'Cuir' },
+      'Tobacco': { ar: 'التبغ', fr: 'Tabac' },
+      'Cedarwood': { ar: 'خشب الأرز', fr: 'Bois de Cèdre' },
+      'Tropical Fruits': { ar: 'الفواكه الاستوائية', fr: 'Fruits Tropicaux' },
+      'Mandarin': { ar: 'اليوسفي', fr: 'Mandarine' },
+      'Coral Flower': { ar: 'زهرة المرجان', fr: 'Fleur de Corail' },
+      'Sea Moss': { ar: 'طحلب البحر', fr: 'Mousse Marine' },
+      'Coconut': { ar: 'جوز الهند', fr: 'Noix de Coco' },
+      'Tonka Bean': { ar: 'حبوب التونكا', fr: 'Fève Tonka' },
+      'Caramel': { ar: 'الكراميل', fr: 'Caramel' },
+      'Mineral Accord': { ar: 'مزيج معدني', fr: 'Accord Minéral' },
+      'Sage': { ar: 'الميرمية', fr: 'Sauge' },
+      'Lavender': { ar: 'اللافندر', fr: 'Lavande' },
+      'Vetiver': { ar: 'الفيتيفر', fr: 'Vétiver' },
+      'Oakmoss': { ar: 'طحلب البلوط', fr: 'Mousse de Chêne' },
+      'Citrus': { ar: 'الحمضيات', fr: 'Agrumes' },
+    };
+    if (currentLanguage === 'ar') return noteMap[note]?.ar || note;
+    if (currentLanguage === 'fr') return noteMap[note]?.fr || note;
+    return note;
+  };
+
+  // Get translated product name
+  const getProductName = () => {
+    if (currentLanguage === 'ar') return product.nameAr || product.name;
+    if (currentLanguage === 'fr') {
+      const frenchNames = {
+        'Desert Oud': 'Oud du Désert',
+        'Coastal Breeze': 'Brise Côtière',
+        'Sahara Amber': 'Ambre du Sahara',
+        'Mediterranean Salt': 'Sel Méditerranéen',
+        'Midnight Dune': 'Dune de Minuit',
+        'Coral Reef': 'Récif Corallien',
+        'Golden Sand': 'Sable Doré',
+        'Salt & Stone': 'Sel & Pierre',
+      };
+      return frenchNames[product.name] || product.name;
+    }
+    return product.name;
+  };
+
+  // Get translated description
+  const getDescription = () => {
+    if (currentLanguage === 'ar') return product.descriptionAr || product.description;
+    if (currentLanguage === 'fr') {
+      const frenchDescriptions = {
+        'Desert Oud': 'Ambre chaud, bois de santal et un mélange rare d\'oud. Un parfum sophistiqué qui capture l\'essence des dunes dorées sans fin.',
+        'Coastal Breeze': 'Sel marin frais, bergamote et musc blanc. Un voyage rafraîchissant le long des rivages immaculés.',
+        'Sahara Amber': 'Ambre riche, vanille et épices exotiques. Une étreinte chaleureuse qui rappelle les nuits du désert.',
+        'Mediterranean Salt': 'Air océanique frais, jasmin et bois flotté. Un voyage aromatique à travers les eaux turquoises.',
+        'Midnight Dune': 'Cuir foncé, encens fumé et bois de cèdre. Un parfum mystérieux pour la nuit.',
+        'Coral Reef': 'Fruits tropicaux, mousse marine et fleur de corail. Un paradis sous-marin vibrant.',
+        'Golden Sand': 'Vanille chaude, fève tonka et musc baigné de soleil. Un éclat radieux au bord de la plage.',
+        'Salt & Stone': 'Accord minéral, sauge et cristaux de sel marin. Un mélange minéral terrestre côtier.',
+      };
+      return frenchDescriptions[product.name] || product.description;
+    }
+    return product.description;
+  };
 
   const handleSizeClick = (e, size) => {
     e.stopPropagation();
@@ -880,7 +1039,7 @@ const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive }) => 
             sx={{
               position: 'absolute',
               top: 20,
-              left: 20,
+              [isRTL ? 'right' : 'left']: 20,
               zIndex: 3,
               background: `linear-gradient(135deg, ${badge.bg} 0%, ${alpha(badge.bg, 0.9)} 50%, ${alpha(badge.bg, 0.7)} 100%)`,
               backdropFilter: 'blur(8px)',
@@ -901,19 +1060,23 @@ const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive }) => 
               },
             }}
           >
-            {product.badge}
+            {getBadgeText()}
           </Paper>
         )}
 
         {/* Wishlist Button */}
-        <Tooltip title={wishlisted ? "Remove from wishlist" : "Add to wishlist"} placement="top" arrow>
+        <Tooltip 
+          title={wishlisted ? t('productCard.removeFromWishlist') : t('productCard.addToWishlist')} 
+          placement="top" 
+          arrow
+        >
           <IconButton
             size="small"
             onClick={onWishlist}
             sx={{
               position: 'absolute',
               top: 20,
-              right: 20,
+              [isRTL ? 'left' : 'right']: 20,
               zIndex: 3,
               bgcolor: 'rgba(255,255,255,0.98)',
               backdropFilter: 'blur(12px)',
@@ -961,7 +1124,7 @@ const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive }) => 
               filter: hovered ? 'brightness(1.02)' : 'brightness(1)',
             }}
             image={product.image}
-            alt={product.name}
+            alt={getProductName()}
           />
 
           {/* Overlay */}
@@ -1006,7 +1169,7 @@ const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive }) => 
                         },
                       }}
                     >
-                      {note}
+                      {getTranslatedNote(note)}
                     </Box>
                   </motion.div>
                 ))}
@@ -1020,7 +1183,7 @@ const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive }) => 
               sx={{
                 position: 'absolute',
                 bottom: 20,
-                right: 20,
+                [isRTL ? 'left' : 'right']: 20,
                 zIndex: 2,
                 background: 'linear-gradient(135deg, #2C6E61 0%, #1E4F45 100%)',
                 color: '#FFFFFF',
@@ -1034,7 +1197,7 @@ const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive }) => 
                 letterSpacing: '0.05em',
               }}
             >
-              -{discount}% OFF
+              -{discount}% {t('productCard.off')}
             </Box>
           )}
         </Box>
@@ -1054,7 +1217,7 @@ const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive }) => 
             {product.season.map((s) => (
               <Chip
                 key={s}
-                label={s}
+                label={getTranslatedSeason(s)}
                 size="small"
                 sx={{
                   fontFamily: 'Oswald, sans-serif',
@@ -1089,12 +1252,13 @@ const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive }) => 
               lineHeight: 1.2,
               mb: 0.5,
               transition: 'color 0.2s ease',
+              textAlign: isRTL ? 'right' : 'left',
               '&:hover': {
                 color: '#6B4423',
               },
             }}
           >
-            {product.name}
+            {getProductName()}
           </Typography>
 
           {/* Description */}
@@ -1112,9 +1276,10 @@ const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive }) => 
               WebkitBoxOrient: 'vertical',
               overflow: 'hidden',
               mb: 2,
+              textAlign: isRTL ? 'right' : 'left',
             }}
           >
-            {product.description}
+            {getDescription()}
           </Typography>
 
           {/* Rating */}
@@ -1139,7 +1304,7 @@ const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive }) => 
                 fontWeight: 500,
               }}
             >
-              {product.rating} ({product.reviews.toLocaleString()} reviews)
+              {product.rating} ({product.reviews.toLocaleString()} {t('productCard.reviews')})
             </Typography>
             <VerifiedOutlinedIcon sx={{ fontSize: 14, color: '#2C6E61' }} />
           </Stack>
@@ -1186,13 +1351,13 @@ const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive }) => 
                     color: '#2C6E61',
                   }}
                 >
-                  Free Shipping • Express Available
+                  {t('productCard.freeShipping')}
                 </Typography>
               </Stack>
             </Box>
 
             {/* Add to Bag Button */}
-            <Tooltip title="Add to cart" placement="top" arrow>
+            <Tooltip title={t('productCard.addToBag')} placement="top" arrow>
               <Button
                 variant="contained"
                 disableElevation
@@ -1220,7 +1385,7 @@ const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive }) => 
                   },
                 }}
               >
-                Add to Bag
+                {t('productCard.addToBag')}
               </Button>
             </Tooltip>
           </Stack>
@@ -1286,9 +1451,10 @@ const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive }) => 
                 letterSpacing: '0.1em',
                 textTransform: 'uppercase',
                 color: alpha('#1A1A1A', 0.55),
+                textAlign: 'center',
               }}
             >
-              Artisanal • Clean Ingredients • Cruelty-Free
+              {t('productCard.artisanal')}
             </Typography>
             <VerifiedOutlinedIcon sx={{ fontSize: 12, color: alpha('#6B4423', 0.5) }} />
           </Stack>

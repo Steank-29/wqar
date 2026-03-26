@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -21,11 +21,12 @@ import {
   Send as SendIcon,
   Instagram as InstagramIcon,
   Copyright as CopyrightIcon,
-  ArrowUpward as ArrowUpwardIcon,
 } from '@mui/icons-material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTiktok } from '@fortawesome/free-brands-svg-icons';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
+import { useLanguage } from './LanguageContext';
 import '@fontsource/oswald';
 
 // Import your logo
@@ -120,6 +121,8 @@ const SocialIcon = styled(motion(IconButton))(({ theme }) => ({
 }));
 
 const Footer = () => {
+  const { t } = useTranslation();
+  const { isRTL, currentLanguage } = useLanguage();
   const [email, setEmail] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -128,7 +131,7 @@ const Footer = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleScroll = () => {
       setShowBackToTop(window.scrollY > 500);
     };
@@ -155,10 +158,6 @@ const Footer = () => {
       tiktok: 'https://tiktok.com/@wqar',
     };
     window.open(links[platform], '_blank');
-  };
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Bounce animation variants
@@ -248,10 +247,10 @@ const Footer = () => {
                       lineHeight: 1.6,
                       maxWidth: '350px',
                       fontSize: { xs: '14px', sm: '15px' },
+                      textAlign: isRTL ? 'right' : 'left',
                     }}
                   >
-                    Curating exquisite fragrances that tell your story. 
-                    Where every scent becomes a signature.
+                    {t('footer.brandDescription')}
                   </Typography>
                 </motion.div>
               </Grid>
@@ -259,7 +258,7 @@ const Footer = () => {
               {/* Social Links with Bounce Animation */}
               <Grid item xs={12} md={3}>
                 <motion.div variants={itemVariants}>
-                  <Box sx={{ textAlign: isMobile ? 'left' : 'center' }}>
+                  <Box sx={{ textAlign: isMobile ? (isRTL ? 'right' : 'left') : 'center' }}>
                     <Typography
                       variant="subtitle1"
                       sx={{
@@ -271,9 +270,13 @@ const Footer = () => {
                         fontSize: { xs: '14px', sm: '15px' },
                       }}
                     >
-                      CONNECT WITH US
+                      {t('footer.connectWithUs')}
                     </Typography>
-                    <Stack direction="row" spacing={1} justifyContent={isMobile ? 'flex-start' : 'center'}>
+                    <Stack 
+                      direction="row" 
+                      spacing={1} 
+                      justifyContent={isMobile ? (isRTL ? 'flex-start' : 'flex-start') : 'center'}
+                    >
                       <SocialIcon
                         onClick={() => handleSocialClick('instagram')}
                         variants={bounceAnimation}
@@ -330,7 +333,7 @@ const Footer = () => {
                             mb: 0.5,
                           }}
                         >
-                          Get 10% off
+                          {t('footer.getDiscount')}
                         </Typography>
                         <Typography
                           variant="body2"
@@ -341,14 +344,14 @@ const Footer = () => {
                             lineHeight: 1.4,
                           }}
                         >
-                          Subscribe for exclusive offers & new arrivals
+                          {t('footer.subscribeOffer')}
                         </Typography>
                       </Grid>
                       <Grid item xs={12} sm={7}>
                         <form onSubmit={handleNewsletterSubmit}>
                           <NewsletterInput
                             fullWidth
-                            placeholder="Enter your email address"
+                            placeholder={t('footer.emailPlaceholder')}
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             type="email"
@@ -424,7 +427,7 @@ const Footer = () => {
                 }}
               >
                 <CopyrightIcon sx={{ fontSize: '12px' }} />
-                {new Date().getFullYear()} Wqar. All rights reserved.
+                {new Date().getFullYear()} {t('footer.copyright')}
               </Typography>
               
               <Box sx={{ display: 'flex', gap: 3 }}>
@@ -441,7 +444,7 @@ const Footer = () => {
                     },
                   }}
                 >
-                  Privacy
+                  {t('footer.privacy')}
                 </Typography>
                 <Typography
                   variant="caption"
@@ -456,7 +459,7 @@ const Footer = () => {
                     },
                   }}
                 >
-                  Terms
+                  {t('footer.terms')}
                 </Typography>
                 <Typography
                   variant="caption"
@@ -471,7 +474,7 @@ const Footer = () => {
                     },
                   }}
                 >
-                  Support
+                  {t('footer.support')}
                 </Typography>
               </Box>
               
@@ -483,7 +486,7 @@ const Footer = () => {
                   letterSpacing: '0.5px',
                 }}
               >
-                The scent of elegance ✨
+                {t('footer.tagline')}
               </Typography>
             </Box>
           </motion.div>
@@ -511,7 +514,7 @@ const Footer = () => {
             },
           }}
         >
-          Subscribed successfully! 🎉 Check your email for 10% off.
+          {t('footer.subscribeSuccess')}
         </Alert>
       </Snackbar>
     </>

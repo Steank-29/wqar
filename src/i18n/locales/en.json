@@ -1,0 +1,121 @@
+{
+  "navbar": {
+    "home": "Home",
+    "shopAll": "Shop All",
+    "wqar": "Wqar",
+    "contact": "Contact",
+    "search": "Search",
+    "searchPlaceholder": "Search for products...",
+    "login": "Login",
+    "signUp": "Sign Up",
+    "loginSignUp": "Login / Sign Up",
+    "cart": "Cart",
+    "newArrivals": "NEW ARRIVALS JUST LANDED",
+    "discoverSignature": "DISCOVER YOUR SIGNATURE SCENT",
+    "inspiredByNature": "INSPIRED BY NATURE, CRAFTED FOR YOU",
+    "language": "Language",
+    "english": "English",
+    "arabic": "العربية",
+    "french": "Français",
+    "copyright": "© 2026, Wqar, all rights reserved"
+  },
+  "hero": {
+    "subtitle": "The Wqar Collection",
+    "title1": "From the Desert,",
+    "title2": "to the Coast",
+    "description": "Scents that tell stories of land and sea — bridging two sides of a country through artisanal fragrance."
+  },
+  "signature": {
+    "title": "Signature Collection",
+    "subtitle": "Curated Fragrances"
+  },
+  "badges": {
+    "award": "Award-Winning Scents",
+    "bestseller": "Bestseller Collection",
+    "rating": "4.8+ Average Rating"
+  },
+  "quickActions": {
+    "viewCollection": "View Full Collection"
+  },
+  "storeLocator": {
+    "findUs": "Find Us",
+    "title": "Our Locations",
+    "description": "Visit us at one of our boutique locations across the city",
+    "locations": "Store Locations",
+    "getDirections": "Get Directions"
+  },
+  "productCard": {
+    "freeShipping": "Free Shipping • Express Available",
+    "artisanal": "Artisanal • Clean Ingredients • Cruelty-Free",
+    "addToBag": "Add to Bag",
+    "addToWishlist": "Add to Wishlist",
+    "removeFromWishlist": "Remove from Wishlist",
+    "reviews": "reviews",
+    "off": "OFF"
+  },
+  "login": {
+    "portal": "Login Portal",
+    "title": "Sign In",
+    "description": "Access your account to manage orders, track shipments, and discover exclusive fragrances",
+    "security": "Enterprise-grade security",
+    "email": "Email Address",
+    "emailPlaceholder": "hello@company.com",
+    "password": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "rememberMe": "Remember me",
+    "forgotPassword": "Forgot password?",
+    "signIn": "Sign In",
+    "authenticating": "Authenticating...",
+    "success": "Login successful! Redirecting...",
+    "errors": {
+      "emailRequired": "Email address is required",
+      "emailInvalid": "Please enter a valid email address",
+      "passwordRequired": "Password is required",
+      "passwordMinLength": "Password must be at least 6 characters",
+      "loginFailed": "Login failed",
+      "invalidCredentials": "Invalid email or password",
+      "tooManyAttempts": "Too many failed attempts. Please try again later.",
+      "accountLocked": "Your account has been locked. Please contact support."
+    }
+},
+"footer": {
+    "brandDescription": "Curating exquisite fragrances that tell your story. Where every scent becomes a signature.",
+    "connectWithUs": "CONNECT WITH US",
+    "getDiscount": "Get 10% off",
+    "subscribeOffer": "Subscribe for exclusive offers & new arrivals",
+    "emailPlaceholder": "Enter your email address",
+    "copyright": "Wqar. All rights reserved.",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "support": "Support",
+    "tagline": "The scent of elegance ✨",
+    "subscribeSuccess": "Subscribed successfully! 🎉 Check your email for 10% off."
+  },
+   "contact": {
+    "overline": "CONTACT US",
+    "title": "Let's Talk",
+    "description": "Have a question about our fragrances? We'd love to hear from you.",
+    "name": "Your Name",
+    "namePlaceholder": "John Doe",
+    "email": "Email Address",
+    "emailPlaceholder": "hello@wqar.com",
+    "phone": "Phone Number",
+    "phonePlaceholder": "+1 (555) 123-4567",
+    "message": "Your Message",
+    "messagePlaceholder": "Tell us about your fragrance preferences or any questions you have...",
+    "sendMessage": "Send Message",
+    "sending": "Sending...",
+    "responseTime": "We typically respond within 24 hours",
+    "successMessage": "Thank you! We'll get back to you soon.",
+    "errors": {
+      "nameRequired": "Name is required",
+      "nameMinLength": "Name must be at least 2 characters",
+      "emailRequired": "Email is required",
+      "emailInvalid": "Please enter a valid email address",
+      "phoneRequired": "Phone number is required",
+      "phoneInvalid": "Please enter a valid phone number",
+      "messageRequired": "Message is required",
+      "messageMinLength": "Message must be at least 10 characters"
+    }
+  }
+}

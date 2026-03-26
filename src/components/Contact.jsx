@@ -23,8 +23,9 @@ import {
   Message as MessageIcon,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
+import { useLanguage } from '../components/LanguageContext';
 import '@fontsource/oswald';
-
 
 const FormContainer = styled(Paper)(({ theme }) => ({
   borderRadius: '32px',
@@ -99,6 +100,8 @@ const SubmitButton = styled(Button)(({ theme }) => ({
 }));
 
 const Contact = () => {
+  const { t } = useTranslation();
+  const { isRTL, currentLanguage } = useLanguage();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -123,27 +126,27 @@ const Contact = () => {
     const newErrors = {};
     
     if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = t('contact.errors.nameRequired');
     } else if (formData.name.length < 2) {
-      newErrors.name = 'Name must be at least 2 characters';
+      newErrors.name = t('contact.errors.nameMinLength');
     }
     
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = t('contact.errors.emailRequired');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = t('contact.errors.emailInvalid');
     }
     
     if (!formData.phone.trim()) {
-      newErrors.phone = 'Phone number is required';
+      newErrors.phone = t('contact.errors.phoneRequired');
     } else if (!/^[\d\s\-+()]{8,}$/.test(formData.phone)) {
-      newErrors.phone = 'Please enter a valid phone number';
+      newErrors.phone = t('contact.errors.phoneInvalid');
     }
     
     if (!formData.message.trim()) {
-      newErrors.message = 'Message is required';
+      newErrors.message = t('contact.errors.messageRequired');
     } else if (formData.message.length < 10) {
-      newErrors.message = 'Message must be at least 10 characters';
+      newErrors.message = t('contact.errors.messageMinLength');
     }
     
     setErrors(newErrors);
@@ -202,6 +205,7 @@ const Contact = () => {
         bgcolor: '#F9F6F1',
         minHeight: '100vh',
         py: { xs: 4, sm: 6, md: 8 },
+        direction: isRTL ? 'rtl' : 'ltr',
       }}
     >
       <Container maxWidth="md">
@@ -225,7 +229,7 @@ const Contact = () => {
                   display: 'block',
                 }}
               >
-                CONTACT US
+                {t('contact.overline')}
               </Typography>
               
               <Typography
@@ -239,7 +243,7 @@ const Contact = () => {
                   letterSpacing: '-0.5px',
                 }}
               >
-                Let's Talk
+                {t('contact.title')}
               </Typography>
               
               <Typography
@@ -253,7 +257,7 @@ const Contact = () => {
                   lineHeight: 1.6,
                 }}
               >
-                Have a question about our fragrances? We'd love to hear from you.
+                {t('contact.description')}
               </Typography>
             </Box>
 
@@ -263,9 +267,9 @@ const Contact = () => {
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                   <StyledTextField
                     fullWidth
-                    label="Your Name"
+                    label={t('contact.name')}
                     name="name"
-                    placeholder="John Doe"
+                    placeholder={t('contact.namePlaceholder')}
                     value={formData.name}
                     onChange={handleChange}
                     error={!!errors.name}
@@ -281,10 +285,10 @@ const Contact = () => {
 
                   <StyledTextField
                     fullWidth
-                    label="Email Address"
+                    label={t('contact.email')}
                     name="email"
                     type="email"
-                    placeholder="hello@wqar.com"
+                    placeholder={t('contact.emailPlaceholder')}
                     value={formData.email}
                     onChange={handleChange}
                     error={!!errors.email}
@@ -300,9 +304,9 @@ const Contact = () => {
 
                   <StyledTextField
                     fullWidth
-                    label="Phone Number"
+                    label={t('contact.phone')}
                     name="phone"
-                    placeholder="+1 (555) 123-4567"
+                    placeholder={t('contact.phonePlaceholder')}
                     value={formData.phone}
                     onChange={handleChange}
                     error={!!errors.phone}
@@ -318,11 +322,11 @@ const Contact = () => {
 
                   <StyledTextField
                     fullWidth
-                    label="Your Message"
+                    label={t('contact.message')}
                     name="message"
                     multiline
                     rows={5}
-                    placeholder="Tell us about your fragrance preferences or any questions you have..."
+                    placeholder={t('contact.messagePlaceholder')}
                     value={formData.message}
                     onChange={handleChange}
                     error={!!errors.message}
@@ -342,7 +346,7 @@ const Contact = () => {
                       disabled={loading}
                       startIcon={loading ? null : <SendIcon />}
                     >
-                      {loading ? 'Sending...' : 'Send Message'}
+                      {loading ? t('contact.sending') : t('contact.sendMessage')}
                     </SubmitButton>
                   </Box>
 
@@ -362,7 +366,7 @@ const Contact = () => {
                       }}
                     >
                       <span>✨</span>
-                      We typically respond within 24 hours
+                      {t('contact.responseTime')}
                       <span>✨</span>
                     </Typography>
                   </Box>
@@ -397,7 +401,7 @@ const Contact = () => {
             },
           }}
         >
-          Thank you! We'll get back to you soon. 
+          {t('contact.successMessage')}
         </Alert>
       </Snackbar>
     </Box>

@@ -1,0 +1,121 @@
+{
+  "navbar": {
+    "home": "Accueil",
+    "shopAll": "Tout voir",
+    "wqar": "Wqar",
+    "contact": "Contact",
+    "search": "Rechercher",
+    "searchPlaceholder": "Rechercher des produits...",
+    "login": "Se connecter",
+    "signUp": "S'inscrire",
+    "loginSignUp": "Se connecter / S'inscrire",
+    "cart": "Panier",
+    "newArrivals": "NOUVEAUTÉS ARRIVÉES",
+    "discoverSignature": "DÉCOUVREZ VOTRE PARFUM SIGNABLE",
+    "inspiredByNature": "INSPIRÉ PAR LA NATURE, FABRIQUÉ POUR VOUS",
+    "language": "Langue",
+    "english": "English",
+    "arabic": "العربية",
+    "french": "Français",
+    "copyright": "© 2026, Wqar, tous droits réservés"
+  },
+  "hero": {
+    "subtitle": "La Collection Wqar",
+    "title1": "Du Désert,",
+    "title2": "à la Côte",
+    "description": "Des parfums qui racontent des histoires de terre et de mer — reliant deux rives d'un pays à travers des fragrances artisanales."
+  },
+  "signature": {
+    "title": "Collection Signature",
+    "subtitle": "Fragrances Curationnées"
+  },
+  "badges": {
+    "award": "Parfums Primés",
+    "bestseller": "Collection Meilleures Ventes",
+    "rating": "Note Moyenne 4.8+"
+  },
+  "quickActions": {
+    "viewCollection": "Voir Toute la Collection"
+  },
+  "storeLocator": {
+    "findUs": "Nous Trouver",
+    "title": "Nos Boutiques",
+    "description": "Visitez-nous dans l'une de nos boutiques à travers la ville",
+    "locations": "Emplacements des Boutiques",
+    "getDirections": "Obtenir l'itinéraire"
+  },
+  "productCard": {
+    "freeShipping": "Livraison Gratuite • Express Disponible",
+    "artisanal": "Artisanal • Ingrédients Naturels • Non testé sur les animaux",
+    "addToBag": "Ajouter au Sac",
+    "addToWishlist": "Ajouter à la Liste d'Envies",
+    "removeFromWishlist": "Retirer de la Liste d'Envies",
+    "reviews": "avis",
+    "off": "DE RÉDUCTION"
+  },
+   "login": {
+    "portal": "Portail de Connexion",
+    "title": "Se Connecter",
+    "description": "Accédez à votre compte pour gérer vos commandes, suivre vos expéditions et découvrir des fragrances exclusives",
+    "security": "Sécurité de niveau entreprise",
+    "email": "Adresse Email",
+    "emailPlaceholder": "hello@company.com",
+    "password": "Mot de passe",
+    "passwordPlaceholder": "Entrez votre mot de passe",
+    "rememberMe": "Se souvenir de moi",
+    "forgotPassword": "Mot de passe oublié ?",
+    "signIn": "Se Connecter",
+    "authenticating": "Authentification...",
+    "success": "Connexion réussie ! Redirection...",
+    "errors": {
+      "emailRequired": "L'adresse email est requise",
+      "emailInvalid": "Veuillez entrer une adresse email valide",
+      "passwordRequired": "Le mot de passe est requis",
+      "passwordMinLength": "Le mot de passe doit comporter au moins 6 caractères",
+      "loginFailed": "Échec de la connexion",
+      "invalidCredentials": "Email ou mot de passe invalide",
+      "tooManyAttempts": "Trop de tentatives échouées. Veuillez réessayer plus tard",
+      "accountLocked": "Votre compte a été verrouillé. Veuillez contacter le support"
+    }
+  },
+  "footer": {
+    "brandDescription": "Nous organisons des fragrances exquises qui racontent votre histoire. Où chaque parfum devient une signature.",
+    "connectWithUs": "CONNECTEZ-VOUS AVEC NOUS",
+    "getDiscount": "Obtenez 10% de réduction",
+    "subscribeOffer": "Abonnez-vous pour des offres exclusives et les nouvelles arrivées",
+    "emailPlaceholder": "Entrez votre adresse email",
+    "copyright": "Wqar. Tous droits réservés.",
+    "privacy": "Confidentialité",
+    "terms": "Conditions",
+    "support": "Support",
+    "tagline": "Le parfum de l'élégance ✨",
+    "subscribeSuccess": "Abonnement réussi ! 🎉 Vérifiez votre email pour 10% de réduction."
+  },
+  "contact": {
+    "overline": "CONTACTEZ-NOUS",
+    "title": "Parlons-en",
+    "description": "Vous avez une question sur nos parfums ? Nous serions ravis de vous entendre.",
+    "name": "Votre Nom",
+    "namePlaceholder": "Jean Dupont",
+    "email": "Adresse Email",
+    "emailPlaceholder": "bonjour@wqar.com",
+    "phone": "Numéro de Téléphone",
+    "phonePlaceholder": "+33 6 XX XX XX XX",
+    "message": "Votre Message",
+    "messagePlaceholder": "Parlez-nous de vos préférences en matière de parfums ou de vos questions...",
+    "sendMessage": "Envoyer le Message",
+    "sending": "Envoi en cours...",
+    "responseTime": "Nous répondons généralement sous 24 heures",
+    "successMessage": "Merci ! Nous vous répondrons bientôt.",
+    "errors": {
+      "nameRequired": "Le nom est requis",
+      "nameMinLength": "Le nom doit comporter au moins 2 caractères",
+      "emailRequired": "L'email est requis",
+      "emailInvalid": "Veuillez entrer une adresse email valide",
+      "phoneRequired": "Le numéro de téléphone est requis",
+      "phoneInvalid": "Veuillez entrer un numéro de téléphone valide",
+      "messageRequired": "Le message est requis",
+      "messageMinLength": "Le message doit comporter au moins 10 caractères"
+    }
+  }
+}

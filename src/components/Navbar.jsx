@@ -31,12 +31,15 @@ import {
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { useLanguage } from './LanguageContext';
+import LanguageSwitcher from './LanguageSwitcher';
 import '@fontsource/oswald';
 
 // Import your logo from assets
 import logo from '../assets/LogoW.png';
 
-// Styled components for professional look
+// Styled components with RTL support
 const StyledAppBar = styled(AppBar)(({ theme, isSticky }) => ({
   backgroundColor: isSticky ? '#8C5A3C' : '#FFFFFF',
   boxShadow: isSticky ? '0 4px 20px rgba(0,0,0,0.1)' : '0 2px 10px rgba(0,0,0,0.05)',
@@ -45,6 +48,7 @@ const StyledAppBar = styled(AppBar)(({ theme, isSticky }) => ({
   top: 0,
   width: '100%',
   zIndex: 1100,
+  direction: 'inherit',
 }));
 
 const NavLink = styled(Typography)(({ theme, isSticky, active }) => ({
@@ -67,7 +71,7 @@ const NavLink = styled(Typography)(({ theme, isSticky, active }) => ({
     content: '""',
     position: 'absolute',
     bottom: '-4px',
-    left: 0,
+    [theme.direction === 'rtl' ? 'right' : 'left']: 0,
     width: active ? '100%' : '0%',
     height: '2px',
     backgroundColor: isSticky ? '#FFFFFF' : '#8C5A3C',
@@ -103,6 +107,7 @@ const SearchContainer = styled(Box)(({ theme, isSticky }) => ({
   zIndex: 1200,
   padding: '0 24px',
   boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+  direction: 'ltr', // Keep search input LTR for better UX
 }));
 
 const SearchInput = styled(InputBase)(({ theme, isSticky }) => ({
@@ -144,14 +149,14 @@ const SliderText = styled(Typography)({
   px: { xs: 1, sm: 0 },
 });
 
-// Mobile Menu Drawer
-const MobileDrawer = styled(Drawer)({
+const MobileDrawer = styled(Drawer)(({ theme }) => ({
   '& .MuiDrawer-paper': {
     width: '280px',
     backgroundColor: '#FFFFFF',
     boxSizing: 'border-box',
+    [theme.direction === 'rtl' ? 'right' : 'left']: 0,
   },
-});
+}));
 
 const DrawerHeader = styled(Box)({
   display: 'flex',
@@ -170,23 +175,30 @@ const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const searchInputRef = useRef(null);
   
+  const { t } = useTranslation();
+  const { isRTL, currentLanguage } = useLanguage();
   const theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
 
+  // Update theme direction
+  useEffect(() => {
+    theme.direction = isRTL ? 'rtl' : 'ltr';
+  }, [isRTL, theme]);
+
   const sliderTexts = [
-    "NEW ARRIVALS JUST LANDED",
-    "DISCOVER YOUR SIGNATURE SCENT",
-    "INSPIRED BY NATURE, CRAFTED FOR YOU"
+    t('navbar.newArrivals'),
+    t('navbar.discoverSignature'),
+    t('navbar.inspiredByNature'),
   ];
 
   const navItems = [
-    { label: 'Home', path: '/' },
-    { label: 'Shop All', path: '/shop' },
-    { label: 'Wqar', path: '/wqar' },
-    { label: 'Contact', path: '/contact' },
+    { label: t('navbar.home'), path: '/' },
+    { label: t('navbar.shopAll'), path: '/shop' },
+    { label: t('navbar.wqar'), path: '/wqar' },
+    { label: t('navbar.contact'), path: '/contact' },
   ];
 
   useEffect(() => {
@@ -209,6 +221,12 @@ const Navbar = () => {
       searchInputRef.current.focus();
     }
   }, [showSearch]);
+
+  // Update nav items when language changes
+  useEffect(() => {
+    // Force re-render of nav items
+    setCurrentSlide(prev => prev);
+  }, [currentLanguage, t]);
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % sliderTexts.length);
@@ -262,7 +280,7 @@ const Navbar = () => {
               color: '#FFFFFF',
             }}
           >
-            Wqar
+            WQAR
           </Typography>
         </Box>
         <IconButton onClick={() => setMobileMenuOpen(false)} sx={{ color: '#FFFFFF' }}>
@@ -290,6 +308,7 @@ const Navbar = () => {
                 fontWeight: location.pathname === item.path ? 600 : 500,
                 letterSpacing: '1px',
                 color: '#8C5A3C',
+                textAlign: isRTL ? 'right' : 'left',
               }}
             />
           </ListItem>
@@ -309,16 +328,36 @@ const Navbar = () => {
             },
           }}
         >
-          <SearchIcon sx={{ color: '#8C5A3C', mr: 2 }} />
+          <SearchIcon sx={{ color: '#8C5A3C', ml: isRTL ? 2 : 0, mr: isRTL ? 0 : 2 }} />
           <ListItemText
-            primary="Search"
+            primary={t('navbar.search')}
             primaryTypographyProps={{
               fontFamily: 'Oswald, sans-serif',
               fontSize: '18px',
               fontWeight: 500,
               color: '#8C5A3C',
+              textAlign: isRTL ? 'right' : 'left',
             }}
           />
+        </ListItem>
+
+        {/* Language switcher in mobile menu */}
+        <ListItem>
+          <Box sx={{ width: '100%', mt: 1 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                fontFamily: 'Oswald, sans-serif',
+                color: alpha('#1A1A1A', 0.6),
+                mb: 1,
+                display: 'block',
+                textAlign: isRTL ? 'right' : 'left',
+              }}
+            >
+              {t('navbar.language')}
+            </Typography>
+            <LanguageSwitcher isSticky={isSticky} isMobile={true} />
+          </Box>
         </ListItem>
       </List>
       
@@ -340,8 +379,8 @@ const Navbar = () => {
             },
           }}
         >
-          <PersonIcon sx={{ mr: 1 }} />
-          Login / Sign Up
+          <PersonIcon sx={{ mr: isRTL ? 0 : 1, ml: isRTL ? 1 : 0 }} />
+          {t('navbar.loginSignUp')}
         </Button>
         
         {/* Footer in drawer */}
@@ -354,7 +393,7 @@ const Navbar = () => {
             mt: 2,
           }}
         >
-          © 2026, Wqar, all rights reserved
+          {t('navbar.copyright')}
         </Typography>
       </Box>
     </Box>
@@ -371,7 +410,7 @@ const Navbar = () => {
               sx={{ color: 'white', '&:hover': { backgroundColor: alpha('#fff', 0.1) } }}
               onClick={prevSlide}
             >
-              <ChevronLeftIcon fontSize="small" />
+              {isRTL ? <ChevronRightIcon fontSize="small" /> : <ChevronLeftIcon fontSize="small" />}
             </IconButton>
 
             <Box sx={{ flex: 1, textAlign: 'center', overflow: 'hidden', position: 'relative', height: { xs: '32px', sm: '28px', md: '24px' } }}>
@@ -398,7 +437,7 @@ const Navbar = () => {
               sx={{ color: 'white', '&:hover': { backgroundColor: alpha('#fff', 0.1) } }}
               onClick={nextSlide}
             >
-              <ChevronRightIcon fontSize="small" />
+              {isRTL ? <ChevronLeftIcon fontSize="small" /> : <ChevronRightIcon fontSize="small" />}
             </IconButton>
           </Box>
         </Container>
@@ -452,6 +491,9 @@ const Navbar = () => {
 
             {/* Right Icons */}
             <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+              {/* Language Switcher */}
+              <LanguageSwitcher isSticky={isSticky} isMobile={false} />
+              
               {/* Search Icon - Hide on mobile since it's in drawer */}
               {!isMobile && !isTablet && (
                 <IconButtonStyled isSticky={isSticky ? 1 : 0} onClick={handleSearchOpen}>
@@ -483,7 +525,7 @@ const Navbar = () => {
                   <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', position: 'relative' }}>
                     <SearchInput
                       inputRef={searchInputRef}
-                      placeholder="Search for products..."
+                      placeholder={t('navbar.searchPlaceholder')}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyPress={handleSearchSubmit}
@@ -493,7 +535,7 @@ const Navbar = () => {
                     <IconButton
                       sx={{
                         position: 'absolute',
-                        right: { xs: 0, sm: 20 },
+                        [isRTL ? 'left' : 'right']: { xs: 0, sm: 20 },
                         top: '50%',
                         transform: 'translateY(-50%)',
                         color: isSticky ? '#FFFFFF' : '#8C5A3C',
@@ -512,7 +554,7 @@ const Navbar = () => {
 
       {/* Mobile Drawer Menu */}
       <MobileDrawer
-        anchor="left"
+        anchor={isRTL ? 'right' : 'left'}
         open={mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
       >
