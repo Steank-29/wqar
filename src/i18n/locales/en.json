@@ -2,7 +2,7 @@
   "navbar": {
     "home": "Home",
     "shopAll": "Shop All",
-    "wqar": "Wqar",
+    "wqar": "Wiqar",
     "contact": "Contact",
     "search": "Search",
     "searchPlaceholder": "Search for products...",
@@ -17,10 +17,10 @@
     "english": "English",
     "arabic": "العربية",
     "french": "Français",
-    "copyright": "© 2026, Wqar, all rights reserved"
+    "copyright": "© 2026, Wiqar, all rights reserved"
   },
   "hero": {
-    "subtitle": "The Wqar Collection",
+    "subtitle": "The Wiqar Collection",
     "title1": "From the Desert,",
     "title2": "to the Coast",
     "description": "Scents that tell stories of land and sea — bridging two sides of a country through artisanal fragrance."
@@ -59,7 +59,7 @@
     "description": "Access your account to manage orders, track shipments, and discover exclusive fragrances",
     "security": "Enterprise-grade security",
     "email": "Email Address",
-    "emailPlaceholder": "hello@company.com",
+    "emailPlaceholder": "Enter your email address",
     "password": "Password",
     "passwordPlaceholder": "Enter your password",
     "rememberMe": "Remember me",
@@ -84,7 +84,7 @@
     "getDiscount": "Get 10% off",
     "subscribeOffer": "Subscribe for exclusive offers & new arrivals",
     "emailPlaceholder": "Enter your email address",
-    "copyright": "Wqar. All rights reserved.",
+    "copyright": "Wiqar. All rights reserved.",
     "privacy": "Privacy",
     "terms": "Terms",
     "support": "Support",
@@ -98,9 +98,9 @@
     "name": "Your Name",
     "namePlaceholder": "John Doe",
     "email": "Email Address",
-    "emailPlaceholder": "hello@wqar.com",
+    "emailPlaceholder": "Enter your email address",
     "phone": "Phone Number",
-    "phonePlaceholder": "+1 (555) 123-4567",
+    "phonePlaceholder": "+126 5x xxx xxx",
     "message": "Your Message",
     "messagePlaceholder": "Tell us about your fragrance preferences or any questions you have...",
     "sendMessage": "Send Message",

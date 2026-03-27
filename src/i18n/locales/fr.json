@@ -2,7 +2,7 @@
   "navbar": {
     "home": "Accueil",
     "shopAll": "Tout voir",
-    "wqar": "Wqar",
+    "wqar": "Wiqar",
     "contact": "Contact",
     "search": "Rechercher",
     "searchPlaceholder": "Rechercher des produits...",
@@ -17,10 +17,10 @@
     "english": "English",
     "arabic": "العربية",
     "french": "Français",
-    "copyright": "© 2026, Wqar, tous droits réservés"
+    "copyright": "© 2026, Wiqar, tous droits réservés"
   },
   "hero": {
-    "subtitle": "La Collection Wqar",
+    "subtitle": "La Collection Wiqar",
     "title1": "Du Désert,",
     "title2": "à la Côte",
     "description": "Des parfums qui racontent des histoires de terre et de mer — reliant deux rives d'un pays à travers des fragrances artisanales."
@@ -59,7 +59,7 @@
     "description": "Accédez à votre compte pour gérer vos commandes, suivre vos expéditions et découvrir des fragrances exclusives",
     "security": "Sécurité de niveau entreprise",
     "email": "Adresse Email",
-    "emailPlaceholder": "hello@company.com",
+    "emailPlaceholder": "Entrez votre adresse email",
     "password": "Mot de passe",
     "passwordPlaceholder": "Entrez votre mot de passe",
     "rememberMe": "Se souvenir de moi",
@@ -84,7 +84,7 @@
     "getDiscount": "Obtenez 10% de réduction",
     "subscribeOffer": "Abonnez-vous pour des offres exclusives et les nouvelles arrivées",
     "emailPlaceholder": "Entrez votre adresse email",
-    "copyright": "Wqar. Tous droits réservés.",
+    "copyright": "Wiqar. Tous droits réservés.",
     "privacy": "Confidentialité",
     "terms": "Conditions",
     "support": "Support",
@@ -98,9 +98,9 @@
     "name": "Votre Nom",
     "namePlaceholder": "Jean Dupont",
     "email": "Adresse Email",
-    "emailPlaceholder": "bonjour@wqar.com",
+    "emailPlaceholder": "Entrez votre adresse email",
     "phone": "Numéro de Téléphone",
-    "phonePlaceholder": "+33 6 XX XX XX XX",
+    "phonePlaceholder": "+216 5X XXX XXX",
     "message": "Votre Message",
     "messagePlaceholder": "Parlez-nous de vos préférences en matière de parfums ou de vos questions...",
     "sendMessage": "Envoyer le Message",

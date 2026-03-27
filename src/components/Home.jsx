@@ -68,7 +68,8 @@ L.Icon.Default.mergeOptions({
 const storeLocations = [
   {
     id: 1,
-    name: 'Wqar Store',
+    name: 'Wiqar Store',
+    nameAr: 'متجر وقار',
     address: 'Sousse, Tunisie',
     addressAr: 'سوسة، تونس',
     addressFr: 'Sousse, Tunisie',
@@ -324,7 +325,7 @@ const Home = () => {
               fontWeight: 300,
               fontStyle: 'italic',
               fontSize: { xs: '42px', sm: '58px', md: '80px', lg: '96px' },
-              lineHeight: 0.92,
+              lineHeight: 1.3,
               letterSpacing: '-2px',
               textTransform: 'uppercase',
               background: 'linear-gradient(120deg, #B87C4F 0%, #6B4423 100%)',
@@ -842,7 +843,7 @@ const Home = () => {
                       mb: 0.5,
                     }}
                   >
-                    {store.name}
+                    {currentLanguage === 'ar' ? store.nameAr : store.name}
                   </Typography>
                   <Typography
                     sx={{

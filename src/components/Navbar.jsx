@@ -270,7 +270,7 @@ const Navbar = () => {
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <DrawerHeader>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <LogoImage src={logo} alt="Wqar Logo" style={{ height: '40px' }} />
+          <LogoImage src={logo} alt="Wiqar Logo" style={{ height: '40px' }} />
           <Typography
             variant="h6"
             sx={{
@@ -280,7 +280,7 @@ const Navbar = () => {
               color: '#FFFFFF',
             }}
           >
-            WQAR
+            WIQAR
           </Typography>
         </Box>
         <IconButton onClick={() => setMobileMenuOpen(false)} sx={{ color: '#FFFFFF' }}>
@@ -473,7 +473,7 @@ const Navbar = () => {
               sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer' }}
               onClick={() => navigate('/')}
             >
-              <LogoImage src={logo} alt="Wqar Logo" />
+              <LogoImage src={logo} alt="Wiqar Logo" />
               <Typography
                 variant="h5"
                 sx={{
@@ -485,7 +485,7 @@ const Navbar = () => {
                   fontSize: { xs: '18px', sm: '20px', md: '24px' },
                 }}
               >
-                Wqar
+                Wiqar
               </Typography>
             </Box>
 
