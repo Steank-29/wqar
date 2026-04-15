@@ -1,4 +1,6 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+// App.jsx
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation  } from 'react-router-dom';
 import { ThemeProvider, StyledEngineProvider } from '@mui/material/styles';
 import { CacheProvider } from '@emotion/react';
 import createCache from '@emotion/cache';
@@ -11,8 +13,13 @@ import Home from './components/Home';
 import Login from './components/Login';
 import ProductDetail from './components/ProductDetail';
 import theme from './theme';
+import ProtectedRoute from './utils/ProtectedRoute';
+import Dashboard from './pages/Dashboard';
+import AddProduct from './pages/AddProduct';
+import Messages from './pages/Messages';
 import './i18n'; // Import i18n configuration
 import './App.css';
+import AdminLayout from './admin/AdminLayout';
 
 // Create emotion cache based on direction
 const createEmotionCache = (direction) => {
@@ -23,25 +30,94 @@ const createEmotionCache = (direction) => {
   });
 };
 
+// ScrollToTop component
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: 'instant'
+    });
+  }, [pathname]);
+  
+  return null;
+};
+
 // Wrapper component to access language context
 const AppContent = () => {
   const { isRTL, currentLanguage } = useLanguage();
   const emotionCache = createEmotionCache(isRTL ? 'rtl' : 'ltr');
+  const location = useLocation();
 
   return (
     <CacheProvider value={emotionCache}>
       <StyledEngineProvider injectFirst>
         <ThemeProvider theme={{ ...theme, direction: isRTL ? 'rtl' : 'ltr' }}>
           <CssBaseline />
+          <ScrollToTop />
           <div dir={isRTL ? 'rtl' : 'ltr'} style={{ minHeight: '100vh' }}>
-            <Layout>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/product/:id" element={<ProductDetail />} />
-                <Route path="/login" element={<Login />} />
-              </Routes>
-            </Layout>
+            <Routes>
+              {/* Public Routes - with Layout */}
+              <Route path="/" element={
+                <Layout>
+                  <Home />
+                </Layout>
+              } />
+              <Route path="/contact" element={
+                <Layout>
+                  <Contact />
+                </Layout>
+              } />
+              <Route path="/product/:id" element={
+                <Layout>
+                  <ProductDetail />
+                </Layout>
+              } />
+              <Route path="/login" element={
+                <Layout>
+                  <Login />
+                </Layout>
+              } />
+              
+              {/* Protected Routes - User Dashboard */}
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <AdminLayout>
+                    <Dashboard />
+                  </AdminLayout>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/messages" element={
+                <ProtectedRoute>
+                  <AdminLayout>
+                    <Messages />
+                  </AdminLayout>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/products" element={
+                <ProtectedRoute>
+                  <AdminLayout>
+                    <AddProduct />
+                  </AdminLayout>
+                </ProtectedRoute>
+              } />
+              
+              {/* Redirect root to home or dashboard based on auth */}
+              <Route path="/" element={<Navigate to="/" replace />} />
+              
+              {/* 404 Not Found */}
+              <Route path="*" element={
+                <Layout>
+                  <div style={{ textAlign: 'center', py: 8 }}>
+                    <h1>404 - Page Not Found</h1>
+                  </div>
+                </Layout>
+              } />
+            </Routes>
           </div>
         </ThemeProvider>
       </StyledEngineProvider>

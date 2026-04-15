@@ -419,65 +419,6 @@ const Home = () => {
           </motion.div>
         </Box>
 
-        {/* Stats Badges */}
-        <Stack
-          direction="row"
-          spacing={3}
-          justifyContent="center"
-          sx={{ mb: 5, flexWrap: 'wrap', gap: 2 }}
-        >
-          <Paper
-            elevation={0}
-            sx={{
-              px: 2.5,
-              py: 1,
-              borderRadius: '40px',
-              bgcolor: alpha('#6B4423', 0.05),
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-            }}
-          >
-            <EmojiEventsIcon sx={{ fontSize: 18, color: '#6B4423' }} />
-            <Typography sx={{ fontFamily: 'Oswald', fontSize: '12px', fontWeight: 500 }}>
-              {t('badges.award')}
-            </Typography>
-          </Paper>
-          <Paper
-            elevation={0}
-            sx={{
-              px: 2.5,
-              py: 1,
-              borderRadius: '40px',
-              bgcolor: alpha('#6B4423', 0.05),
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-            }}
-          >
-            <WhatshotIcon sx={{ fontSize: 18, color: '#6B4423' }} />
-            <Typography sx={{ fontFamily: 'Oswald', fontSize: '12px', fontWeight: 500 }}>
-              {t('badges.bestseller')}
-            </Typography>
-          </Paper>
-          <Paper
-            elevation={0}
-            sx={{
-              px: 2.5,
-              py: 1,
-              borderRadius: '40px',
-              bgcolor: alpha('#6B4423', 0.05),
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-            }}
-          >
-            <TrendingUpIcon sx={{ fontSize: 18, color: '#6B4423' }} />
-            <Typography sx={{ fontFamily: 'Oswald', fontSize: '12px', fontWeight: 500 }}>
-              {t('badges.rating')}
-            </Typography>
-          </Paper>
-        </Stack>
 
         {/* Premium Slider */}
         <Box sx={{ position: 'relative', px: { xs: 0, md: 2 } }}>

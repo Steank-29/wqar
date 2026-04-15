@@ -31,6 +31,8 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../components/LanguageContext';
 import '@fontsource/oswald';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 // Styled Components with RTL support
 const LoginContainer = styled(Paper)(({ theme }) => ({
@@ -111,6 +113,7 @@ const Login = () => {
   const { isRTL, currentLanguage } = useLanguage();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const navigate = useNavigate();
   
   // State management
   const [formData, setFormData] = useState({
@@ -162,7 +165,7 @@ const Login = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle login submission
+  // Handle login submission - Updated for backend integration
   const handleLogin = async (e) => {
     e.preventDefault();
     
@@ -173,8 +176,8 @@ const Login = () => {
     setLoading(true);
     
     try {
-      // Company-level authentication with rate limiting and security headers
-      const response = await fetch('/api/auth/login', {
+      // Call your backend login endpoint
+      const response = await fetch(`${import.meta.env.VITE_API_BASE}/users/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -183,49 +186,70 @@ const Login = () => {
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
-          rememberMe: formData.rememberMe,
         }),
-        credentials: 'include', // Include cookies for session management
+        credentials: 'include', // Include cookies if needed
       });
       
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.message || t('login.errors.loginFailed'));
+        // Handle specific error cases
+        if (response.status === 401) {
+          throw new Error(t('login.errors.invalidCredentials'));
+        } else if (response.status === 500) {
+          throw new Error(t('login.errors.serverError'));
+        } else {
+          throw new Error(data.message || t('login.errors.loginFailed'));
+        }
       }
       
-      // Store auth token securely
+      // Store user data and token based on remember me option
+      const userData = {
+        id: data._id,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        role: data.role,
+        profilePicture: data.profilePicture,
+        token: data.token
+      };
+      
       if (formData.rememberMe) {
         localStorage.setItem('authToken', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('user', JSON.stringify(userData));
+        // Optionally store token expiry
+        const expiry = new Date();
+        expiry.setDate(expiry.getDate() + 30); // 30 days
+        localStorage.setItem('tokenExpiry', expiry.toISOString());
       } else {
         sessionStorage.setItem('authToken', data.token);
-        sessionStorage.setItem('user', JSON.stringify(data.user));
+        sessionStorage.setItem('user', JSON.stringify(userData));
       }
+      
+      // Set default authorization header for future requests
+      axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
       
       // Show success message
       setSnackbar({
         open: true,
-        message: t('login.success'),
+        message: `${t('login.success')} ${t('login.welcomeBack')} ${data.firstName}!`,
         severity: 'success',
       });
       
       // Redirect after successful login
       setTimeout(() => {
-        window.location.href = '/dashboard';
+        if (data.role === 'admin') {
+          navigate('/dashboard');
+        } else {
+          navigate('/dashboard');
+        }
       }, 1500);
       
     } catch (error) {
       console.error('Login error:', error);
       
       // Handle different error scenarios
-      let errorMessage = t('login.errors.invalidCredentials');
-      
-      if (error.message.includes('too many attempts')) {
-        errorMessage = t('login.errors.tooManyAttempts');
-      } else if (error.message.includes('account locked')) {
-        errorMessage = t('login.errors.accountLocked');
-      }
+      let errorMessage = error.message || t('login.errors.invalidCredentials');
       
       setSnackbar({
         open: true,
@@ -233,7 +257,7 @@ const Login = () => {
         severity: 'error',
       });
       
-      // Clear password field on error
+      // Clear password field on error for security
       setFormData((prev) => ({ ...prev, password: '' }));
     } finally {
       setLoading(false);

@@ -13,6 +13,7 @@ import {
   alpha,
   styled,
   InputAdornment,
+  CircularProgress,
 } from '@mui/material';
 import {
   Send as SendIcon,
@@ -25,7 +26,10 @@ import {
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../components/LanguageContext';
+import axios from 'axios';
 import '@fontsource/oswald';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const FormContainer = styled(Paper)(({ theme }) => ({
   borderRadius: '32px',
@@ -111,6 +115,7 @@ const Contact = () => {
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState('');
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -120,6 +125,7 @@ const Contact = () => {
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
     }
+    if (apiError) setApiError('');
   };
 
   const validateForm = () => {
@@ -161,18 +167,25 @@ const Contact = () => {
     }
     
     setLoading(true);
+    setApiError('');
     
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Contact Form Submitted:', formData);
-      setSubmitted(true);
-      setFormData({ name: '', email: '', phone: '', message: '' });
-      setLoading(false);
+    try {
+      const response = await axios.post(`${API_URL}/contact`, formData);
       
-      setTimeout(() => {
-        setSubmitted(false);
-      }, 5000);
-    }, 1500);
+      if (response.data.success) {
+        setSubmitted(true);
+        setFormData({ name: '', email: '', phone: '', message: '' });
+        
+        setTimeout(() => {
+          setSubmitted(false);
+        }, 5000);
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      setApiError(error.response?.data?.message || 'Failed to send message. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const containerVariants = {
@@ -261,6 +274,17 @@ const Contact = () => {
               </Typography>
             </Box>
 
+            {/* Error Alert */}
+            {apiError && (
+              <Alert 
+                severity="error" 
+                sx={{ mb: 3, borderRadius: '16px' }}
+                onClose={() => setApiError('')}
+              >
+                {apiError}
+              </Alert>
+            )}
+
             {/* Form */}
             <motion.div variants={formVariants}>
               <form onSubmit={handleSubmit}>
@@ -344,7 +368,7 @@ const Contact = () => {
                     <SubmitButton
                       type="submit"
                       disabled={loading}
-                      startIcon={loading ? null : <SendIcon />}
+                      startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SendIcon />}
                     >
                       {loading ? t('contact.sending') : t('contact.sendMessage')}
                     </SubmitButton>
