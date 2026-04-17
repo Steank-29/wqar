@@ -11,23 +11,65 @@ const {
   getProductStats,
   uploadProductImages
 } = require('../controllers/productController');
-const { protect, admin } = require('../middleware/auth');
-const uploadProduct = require('../middleware/uploadProduct'); // CHANGE THIS - use product-specific upload
+const { protect, superAdminOnly, adminOrSuperAdmin } = require('../middleware/auth');
+const { checkBlockedApis } = require('../middleware/apiBlocker');
+const uploadProduct = require('../middleware/uploadProduct');
 
 const router = express.Router();
 
-// Public routes
+// Public routes (no authentication needed)
 router.get('/stats/summary', getProductStats);
 router.get('/', getProducts);
 router.get('/:id', getProductById);
 
-// Admin only routes - CHANGE upload.array to uploadProduct.array
-router.post('/', protect, admin, uploadProduct.array('images', 5), createProduct);
-router.put('/:id', protect, admin, uploadProduct.array('images', 5), updateProduct);
-router.delete('/:id', protect, admin, deleteProduct);
-router.delete('/:id/images/:imageIndex', protect, admin, deleteProductImage);
-router.delete('/bulk/delete', protect, admin, bulkDeleteProducts);
-router.patch('/:id/stock', protect, admin, updateStock);
-router.post('/:id/upload-images', protect, admin, uploadProduct.array('images', 5), uploadProductImages);
+// Admin only routes (admin or super admin can access)
+router.put('/:id', 
+  protect, 
+  adminOrSuperAdmin, 
+  checkBlockedApis('/api/products/:id', 'PUT'),
+  uploadProduct.array('images', 5), 
+  updateProduct
+);
+
+router.patch('/:id/stock', 
+  protect, 
+  adminOrSuperAdmin, 
+  updateStock
+);
+
+// Super admin only routes (only super admin can access)
+router.post('/', 
+  protect, 
+  superAdminOnly, 
+  checkBlockedApis('/api/products', 'POST'),
+  uploadProduct.array('images', 5), 
+  createProduct
+);
+
+router.delete('/:id', 
+  protect, 
+  superAdminOnly, 
+  checkBlockedApis('/api/products/:id', 'DELETE'),
+  deleteProduct
+);
+
+router.delete('/:id/images/:imageIndex', 
+  protect, 
+  superAdminOnly, 
+  deleteProductImage
+);
+
+router.delete('/bulk/delete', 
+  protect, 
+  superAdminOnly, 
+  bulkDeleteProducts
+);
+
+router.post('/:id/upload-images', 
+  protect, 
+  superAdminOnly, 
+  uploadProduct.array('images', 5), 
+  uploadProductImages
+);
 
 module.exports = router;

@@ -17,9 +17,14 @@ import ProtectedRoute from './utils/ProtectedRoute';
 import Dashboard from './pages/Dashboard';
 import AddProduct from './pages/AddProduct';
 import Messages from './pages/Messages';
+import Settings from './pages/Settings';
+import Products from './components/Products'
+import Order from './pages/Order';
+import Facture from './pages/Facture';
 import './i18n'; // Import i18n configuration
 import './App.css';
 import AdminLayout from './admin/AdminLayout';
+import Checkout from './components/Checkout';
 
 // Create emotion cache based on direction
 const createEmotionCache = (direction) => {
@@ -70,6 +75,16 @@ const AppContent = () => {
                   <Contact />
                 </Layout>
               } />
+              <Route path="/products" element={
+                <Layout>
+                  <Products />
+                </Layout>
+              } />
+              <Route path="/checkout" element={
+                <Layout>
+                  <Checkout />
+                </Layout>
+              } />
               <Route path="/product/:id" element={
                 <Layout>
                   <ProductDetail />
@@ -98,13 +113,37 @@ const AppContent = () => {
                 </ProtectedRoute>
               } />
 
-              <Route path="/products" element={
+              <Route path="/order" element={
+                <ProtectedRoute>
+                  <AdminLayout>
+                    <Order />
+                  </AdminLayout>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/admin/orders/:orderId/invoice" element={
+                <ProtectedRoute>
+                  <AdminLayout>
+                    <Facture />
+                  </AdminLayout>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/perfumes" element={
                 <ProtectedRoute>
                   <AdminLayout>
                     <AddProduct />
                   </AdminLayout>
                 </ProtectedRoute>
               } />
+              <Route path="/settings" element={
+                <ProtectedRoute>
+                  <AdminLayout>
+                    <Settings />
+                  </AdminLayout>
+                </ProtectedRoute>
+              } />
+
               
               {/* Redirect root to home or dashboard based on auth */}
               <Route path="/" element={<Navigate to="/" replace />} />

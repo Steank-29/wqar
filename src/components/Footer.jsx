@@ -21,6 +21,7 @@ import {
   Send as SendIcon,
   Instagram as InstagramIcon,
   Copyright as CopyrightIcon,
+  Facebook as FacebookIcon
 } from '@mui/icons-material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTiktok } from '@fortawesome/free-brands-svg-icons';
@@ -154,8 +155,9 @@ const Footer = () => {
 
   const handleSocialClick = (platform) => {
     const links = {
-      instagram: 'https://instagram.com/wqar',
-      tiktok: 'https://tiktok.com/@wqar',
+      instagram: 'https://www.instagram.com/wiqar_up/',
+      tiktok: 'https://tiktok.com/@waqr_up',
+      facebook: 'https://www.facebook.com/profile.php?id=61582035346633&mibextid=wwXIfr&rdid=DGhMVoohT70qQKSt&share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F1CSWNoDfij%2F%3Fmibextid%3DwwXIfr%26utm_source%3Dig%26utm_medium%3Dsocial%26utm_content%3Dlink_in_bio#',
     };
     window.open(links[platform], '_blank');
   };
@@ -288,6 +290,16 @@ const Footer = () => {
                         <InstagramIcon sx={{ fontSize: '24px' }} />
                       </SocialIcon>
                       <SocialIcon
+                        onClick={() => handleSocialClick('facebook')}
+                        variants={bounceAnimation}
+                        initial="initial"
+                        animate="animate"
+                        whileHover="hover"
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <FacebookIcon sx={{ fontSize: '24px' }} />
+                      </SocialIcon>
+                      <SocialIcon
                         onClick={() => handleSocialClick('tiktok')}
                         variants={bounceAnimation}
                         initial="initial"
@@ -309,7 +321,7 @@ const Footer = () => {
                           letterSpacing: '0.5px',
                         }}
                       >
-                        WQAR SCENT
+                        WIQAR FRAGRANCE
                       </Typography>
                     </Box>
                   </Box>

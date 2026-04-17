@@ -2,25 +2,50 @@ import React, { useState, useCallback, useEffect } from 'react';
 import {
   AppBar, Toolbar, Box, IconButton, Badge, useMediaQuery, useTheme, alpha, styled,
   Tooltip, InputBase, Menu, MenuItem, Divider, Avatar, Typography, Chip,
-  Drawer, List, ListItem, ListItemIcon, ListItemText,
+  Drawer, List, ListItem, ListItemIcon, ListItemText, ListItemAvatar,
+  Button, CircularProgress, Stack,
 } from '@mui/material';
 import {
   Menu as MenuIcon, Search as SearchIcon, Fullscreen as FullscreenIcon,
   FullscreenExit as FullscreenExitIcon, Close as CloseIcon, Notifications as NotificationsIcon,
   Person as PersonIcon, Settings as SettingsIcon, Logout as LogoutIcon,
   Dashboard as DashboardIcon, ShoppingCart as OrdersIcon, Store as ProductsIcon,
-  Inventory as InventoryIcon, Message as MessageIcon, Receipt as InvoiceIcon,
-  AttachMoney as IncomeIcon, Settings as SettingsNavIcon
+  Inventory as InventoryIcon, Message as MessageIcon,
+  FiberManualRecord, DoneAll, AccessTime, CheckCircle, Cancel, LocalShipping,
+  Inventory,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useLanguage } from '../components/LanguageContext';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import axios from 'axios';
 import '@fontsource/oswald';
 
 // Import your logo
 import logo from '../assets/LogoW.png';
+
+// API Configuration
+const API_URL = import.meta.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+const getAuthToken = () => {
+  return localStorage.getItem('authToken') || localStorage.getItem('token') || sessionStorage.getItem('authToken');
+};
+
+const axiosInstance = axios.create({
+  baseURL: API_URL,
+});
+
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const token = getAuthToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 const COLORS = {
   primary: '#8C5A3C',
@@ -33,6 +58,13 @@ const COLORS = {
   error: '#C0392B',
   text: '#2C1810',
   muted: '#8B7355',
+  success: '#10B981',
+  warning: '#F59E0B',
+  info: '#3B82F6',
+  gray200: '#E5E7EB',
+  gray500: '#6B7280',
+  gray700: '#374151',
+  gray50: '#F9FAFB',
 };
 
 // Helper function to get full image URL
@@ -43,9 +75,7 @@ const getFullImageUrl = (imagePath) => {
     return '/default-avatar.jpg';
   }
   
-  // Get base URL from environment or use default
   const baseUrl = import.meta.env.REACT_APP_API_URL || 'http://localhost:5000';
-  // Remove any leading slashes to avoid double slashes
   const cleanPath = imagePath.replace(/^\/+/, '');
   return `${baseUrl}/${cleanPath}`;
 };
@@ -93,7 +123,9 @@ const DrawerHeader = styled(Box)(({ theme }) => ({
   background: alpha(COLORS.primary, 0.02),
 }));
 
-const DrawerNavItem = styled(ListItem)(({ theme, active }) => ({
+const DrawerNavItem = styled(ListItem, {
+  shouldForwardProp: (prop) => prop !== 'active',
+})(({ theme, active }) => ({
   margin: '4px 12px',
   borderRadius: 12,
   transition: 'all 0.2s ease',
@@ -203,28 +235,31 @@ const LogoTitle = styled(Typography)(({ theme }) => ({
   WebkitTextFillColor: 'transparent',
 }));
 
-// Navigation items - Mobile Drawer (all items)
+// Status icons mapping
+const statusIcons = {
+  pending: <AccessTime sx={{ fontSize: 16, color: COLORS.warning }} />,
+  confirmed: <CheckCircle sx={{ fontSize: 16, color: COLORS.info }} />,
+  processing: <Inventory sx={{ fontSize: 16, color: COLORS.info }} />,
+  shipped: <LocalShipping sx={{ fontSize: 16, color: COLORS.success }} />,
+  delivered: <DoneAll sx={{ fontSize: 16, color: COLORS.success }} />,
+  cancelled: <Cancel sx={{ fontSize: 16, color: COLORS.error }} />,
+};
+
+// Navigation items
 const mobileNavItems = [
   { path: '/dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
-  { path: '/products', label: 'Perfumes', icon: <ProductsIcon /> },
-  { path: '/orders', label: 'Orders', icon: <OrdersIcon /> },
+  { path: '/perfumes', label: 'Perfumes', icon: <ProductsIcon /> },
+  { path: '/order', label: 'Orders', icon: <OrdersIcon /> },
   { path: '/messages', label: 'Messages', icon: <MessageIcon /> },
-  { path: '/invoices', label: 'Factures', icon: <InvoiceIcon /> },
-  { path: '/inventory', label: 'Inventory', icon: <InventoryIcon /> },
-  { path: '/income', label: 'Income', icon: <IncomeIcon /> },
-  { path: '/Admin-Panel/Settings', label: 'Settings', icon: <SettingsNavIcon /> },
+  { path: '/settings', label: 'Settings', icon: <SettingsIcon /> },
 ];
 
-// Desktop Navigation items
 const desktopNavItems = [
   { path: '/dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
-  { path: '/products', label: 'Perfumes', icon: <ProductsIcon /> },
-  { path: '/orders', label: 'Orders', icon: <OrdersIcon /> },
+  { path: '/perfumes', label: 'Perfumes', icon: <ProductsIcon /> },
+  { path: '/order', label: 'Orders', icon: <OrdersIcon /> },
   { path: '/messages', label: 'Messages', icon: <MessageIcon /> },
-  { path: '/invoices', label: 'Factures', icon: <InvoiceIcon /> },
-  { path: '/inventory', label: 'Inventory', icon: <InventoryIcon /> },
-  { path: '/income', label: 'Income', icon: <IncomeIcon /> },
-  { path: '/Admin-Panel/Settings', label: 'Settings', icon: <SettingsNavIcon /> },
+  { path: '/settings', label: 'Settings', icon: <SettingsIcon /> },
 ];
 
 const AdminBar = ({ sidebarOpen, onMenuClick, isMobile: propIsMobile, onLogout }) => {
@@ -234,7 +269,6 @@ const AdminBar = ({ sidebarOpen, onMenuClick, isMobile: propIsMobile, onLogout }
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   
-  // Responsive breakpoints
   const isMobile = propIsMobile !== undefined ? propIsMobile : useMediaQuery(theme.breakpoints.down('md'));
 
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
@@ -245,8 +279,48 @@ const AdminBar = ({ sidebarOpen, onMenuClick, isMobile: propIsMobile, onLogout }
   const [profileAnchor, setProfileAnchor] = useState(null);
   const [user, setUser] = useState(null);
   const [imageError, setImageError] = useState(false);
+  
+  // Notification states
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
+  const [totalNewOrders, setTotalNewOrders] = useState(0);
 
-  const unreadCount = 3;
+  // Fetch recent orders for notifications
+  const fetchRecentOrders = useCallback(async () => {
+    setLoadingNotifications(true);
+    try {
+      const response = await axiosInstance.get('/orders', {
+        params: {
+          page: 1,
+          limit: 10,
+          sortBy: 'createdAt',
+          order: 'desc',
+          status: 'pending'
+        }
+      });
+      
+      const pendingOrders = response.data.orders || [];
+      setRecentOrders(pendingOrders.slice(0, 5));
+      setPendingCount(pendingOrders.length);
+      setTotalNewOrders(pendingOrders.filter(o => {
+        const orderDate = new Date(o.createdAt);
+        const today = new Date();
+        return orderDate.toDateString() === today.toDateString();
+      }).length);
+    } catch (error) {
+      console.error('Error fetching recent orders:', error);
+    } finally {
+      setLoadingNotifications(false);
+    }
+  }, []);
+
+  // Fetch orders periodically
+  useEffect(() => {
+    fetchRecentOrders();
+    const interval = setInterval(fetchRecentOrders, 30000); // Every 30 seconds
+    return () => clearInterval(interval);
+  }, [fetchRecentOrders]);
 
   useEffect(() => {
     const stored = localStorage.getItem('user') || sessionStorage.getItem('user');
@@ -278,10 +352,30 @@ const AdminBar = ({ sidebarOpen, onMenuClick, isMobile: propIsMobile, onLogout }
     setProfileAnchor(null);
   };
 
+  const handleNotificationClick = (event) => {
+    setNotificationAnchor(event.currentTarget);
+    fetchRecentOrders(); // Refresh on open
+  };
+
+  const handleNotificationClose = () => {
+    setNotificationAnchor(null);
+  };
+
   const handleNavigate = (path) => {
     navigate(path);
     handleProfileClose();
     setMobileDrawerOpen(false);
+    handleNotificationClose();
+  };
+
+  const handleViewOrder = () => {
+    navigate(`/order`);
+    handleNotificationClose();
+  };
+
+  const handleViewAllOrders = () => {
+    navigate('/order');
+    handleNotificationClose();
   };
 
   const handleLogoClick = () => {
@@ -327,15 +421,28 @@ const AdminBar = ({ sidebarOpen, onMenuClick, isMobile: propIsMobile, onLogout }
     setMobileDrawerOpen(false);
   }, []);
 
-  // Get profile picture URL with full path
   const profilePictureUrl = user?.profilePicture ? getFullImageUrl(user.profilePicture) : null;
   
-  // Get initials for avatar fallback
   const getInitials = () => {
     if (user?.firstName && user?.lastName) {
       return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
     }
     return user?.firstName?.[0]?.toUpperCase() || 'A';
+  };
+
+  const isPathActive = (path) => {
+    if (path === '/order') {
+      return location.pathname === path || location.pathname.startsWith('/order');
+    }
+    return location.pathname === path || location.pathname.startsWith(path + '/');
+  };
+
+  const formatTimeAgo = (date) => {
+    const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+    if (seconds < 60) return `${seconds} sec ago`;
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+    return new Date(date).toLocaleDateString();
   };
 
   // Mobile Drawer Content
@@ -361,9 +468,8 @@ const AdminBar = ({ sidebarOpen, onMenuClick, isMobile: propIsMobile, onLogout }
           {mobileNavItems.map((item) => (
             <DrawerNavItem
               key={item.path}
-              active={location.pathname === item.path}
+              active={isPathActive(item.path) ? 1 : 0}
               onClick={() => handleNavigate(item.path)}
-              button
             >
               <ListItemIcon>{item.icon}</ListItemIcon>
               <ListItemText primary={item.label} />
@@ -410,8 +516,8 @@ const AdminBar = ({ sidebarOpen, onMenuClick, isMobile: propIsMobile, onLogout }
                 px: 2,
                 py: 1,
                 minWidth: '80px',
-                backgroundColor: location.pathname === item.path ? alpha(COLORS.primary, 0.08) : 'transparent',
-                color: location.pathname === item.path ? COLORS.primary : COLORS.muted,
+                backgroundColor: isPathActive(item.path) ? alpha(COLORS.primary, 0.08) : 'transparent',
+                color: isPathActive(item.path) ? COLORS.primary : COLORS.muted,
                 '&:hover': {
                   backgroundColor: alpha(COLORS.primary, 0.08),
                   color: COLORS.primary,
@@ -423,7 +529,7 @@ const AdminBar = ({ sidebarOpen, onMenuClick, isMobile: propIsMobile, onLogout }
                 fontSize: 12, 
                 mt: 0.5, 
                 fontFamily: 'Oswald',
-                fontWeight: location.pathname === item.path ? 600 : 500,
+                fontWeight: isPathActive(item.path) ? 600 : 500,
               }}>
                 {item.label}
               </Typography>
@@ -444,7 +550,7 @@ const AdminBar = ({ sidebarOpen, onMenuClick, isMobile: propIsMobile, onLogout }
           px: { xs: 2, sm: 3 },
           gap: 3,
         }}>
-          {/* Left Section - Menu Button (Mobile ONLY) + Logo */}
+          {/* Left Section - Menu Button + Logo */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
             {isMobile && (
               <Tooltip title="Open menu">
@@ -474,7 +580,7 @@ const AdminBar = ({ sidebarOpen, onMenuClick, isMobile: propIsMobile, onLogout }
             </Box>
           </Box>
 
-          {/* Center Section - Search Bar (hide on mobile) */}
+          {/* Center Section - Search Bar */}
           {!isMobile && (
             <Box sx={{ 
               flex: 1, 
@@ -486,7 +592,7 @@ const AdminBar = ({ sidebarOpen, onMenuClick, isMobile: propIsMobile, onLogout }
               <SearchBox>
                 <SearchIcon sx={{ color: '#9E9E9E', fontSize: 20, ml: 2, mr: 0.5 }} />
                 <SearchInput
-                  placeholder=" Search for what you need... (⌘K) "
+                  placeholder=" Search for orders, products... (⌘K) "
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => setSearchFocused(true)}
@@ -522,9 +628,9 @@ const AdminBar = ({ sidebarOpen, onMenuClick, isMobile: propIsMobile, onLogout }
               </TopAction>
             </Tooltip>
 
-            <Tooltip title={`${t('admin.notifications')} (${unreadCount} unread)`}>
-              <TopAction onClick={(e) => setNotificationAnchor(e.currentTarget)} size="large">
-                <StyledBadge badgeContent={unreadCount}>
+            <Tooltip title={`${pendingCount} pending orders`}>
+              <TopAction onClick={handleNotificationClick} size="large">
+                <StyledBadge badgeContent={pendingCount} max={99}>
                   <NotificationsIcon sx={{ fontSize: 22 }} />
                 </StyledBadge>
               </TopAction>
@@ -544,10 +650,10 @@ const AdminBar = ({ sidebarOpen, onMenuClick, isMobile: propIsMobile, onLogout }
         </Toolbar>
       </StyledAppBar>
 
-      {/* Secondary Navigation - ONLY for Tablet and Desktop */}
+      {/* Secondary Navigation */}
       {!isMobile && <SecondaryNavigation />}
 
-      {/* Mobile Drawer - ONLY visible on mobile */}
+      {/* Mobile Drawer */}
       {isMobile && <MobileDrawer />}
 
       {/* Profile Menu */}
@@ -618,14 +724,14 @@ const AdminBar = ({ sidebarOpen, onMenuClick, isMobile: propIsMobile, onLogout }
           />
         </Box>
 
-        <MenuItem onClick={() => handleNavigate('/profile')} sx={{ gap: 1.5, py: 1.3, px: 2.5 }}>
+        <MenuItem onClick={() => handleNavigate('/settings')} sx={{ gap: 1.5, py: 1.3, px: 2.5 }}>
           <PersonIcon sx={{ color: COLORS.primary, fontSize: 20 }} />
           <Typography sx={{ fontFamily: 'Oswald', fontSize: 14, fontWeight: 500 }}>
             My Profile
           </Typography>
         </MenuItem>
 
-        <MenuItem onClick={() => handleNavigate('/Admin-Panel/Settings')} sx={{ gap: 1.5, py: 1.3, px: 2.5 }}>
+        <MenuItem onClick={() => handleNavigate('/settings')} sx={{ gap: 1.5, py: 1.3, px: 2.5 }}>
           <SettingsIcon sx={{ color: COLORS.primary, fontSize: 20 }} />
           <Typography sx={{ fontFamily: 'Oswald', fontSize: 14, fontWeight: 500 }}>
             Settings
@@ -664,17 +770,17 @@ const AdminBar = ({ sidebarOpen, onMenuClick, isMobile: propIsMobile, onLogout }
         </Box>
       </Menu>
 
-      {/* Notification Menu */}
+      {/* Notification Menu - Shows Recent Orders */}
       <Menu
         anchorEl={notificationAnchor}
         open={Boolean(notificationAnchor)}
-        onClose={() => setNotificationAnchor(null)}
+        onClose={handleNotificationClose}
         transformOrigin={{ horizontal: 'right', vertical: 'top' }}
         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
         PaperProps={{
           sx: {
-            width: 360,
-            maxHeight: 440,
+            width: 400,
+            maxHeight: 500,
             borderRadius: 3,
             mt: 1.5,
             boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
@@ -682,15 +788,127 @@ const AdminBar = ({ sidebarOpen, onMenuClick, isMobile: propIsMobile, onLogout }
           },
         }}
       >
-        <Box sx={{ px: 2.5, py: 1.5, borderBottom: '1px solid #E8E8E8' }}>
-          <Typography sx={{ fontFamily: 'Oswald', fontWeight: 600, fontSize: 16, color: COLORS.text }}>
-            Notifications
-          </Typography>
+        <Box sx={{ 
+          px: 2.5, 
+          py: 2, 
+          borderBottom: `1px solid ${COLORS.gray200}`,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}>
+          <Box>
+            <Typography sx={{ fontFamily: 'Oswald', fontWeight: 600, fontSize: 16, color: COLORS.text }}>
+              Recent Orders
+            </Typography>
+            {totalNewOrders > 0 && (
+              <Typography variant="caption" sx={{ color: COLORS.success }}>
+                {totalNewOrders} new today
+              </Typography>
+            )}
+          </Box>
+          <Chip 
+            label={`${pendingCount} pending`} 
+            size="small" 
+            sx={{ 
+              bgcolor: alpha(COLORS.warning, 0.1), 
+              color: COLORS.warning,
+              fontWeight: 600,
+            }} 
+          />
         </Box>
-        <Box sx={{ p: 3, textAlign: 'center' }}>
-          <Typography color="textSecondary" sx={{ fontFamily: 'Oswald' }}>
-            No new notifications
-          </Typography>
+
+        <Box sx={{ maxHeight: 380, overflowY: 'auto' }}>
+          {loadingNotifications ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress size={32} sx={{ color: COLORS.primary }} />
+            </Box>
+          ) : recentOrders.length === 0 ? (
+            <Box sx={{ p: 4, textAlign: 'center' }}>
+              <CheckCircle sx={{ fontSize: 48, color: COLORS.success, mb: 1 }} />
+              <Typography color="textSecondary" sx={{ fontFamily: 'Oswald' }}>
+                No pending orders
+              </Typography>
+              <Typography variant="caption" color="textSecondary">
+                All caught up!
+              </Typography>
+            </Box>
+          ) : (
+            <>
+              {recentOrders.map((order) => (
+                <MenuItem 
+                  key={order._id}
+                  onClick={() => handleViewOrder()}
+                  sx={{ 
+                    py: 1.5, 
+                    px: 2.5,
+                    borderBottom: `1px solid ${COLORS.gray200}`,
+                    '&:hover': {
+                      bgcolor: alpha(COLORS.primary, 0.04),
+                    },
+                  }}
+                >
+                  <ListItemAvatar>
+                    <Avatar sx={{ 
+                      bgcolor: alpha(COLORS.warning, 0.1),
+                      width: 40,
+                      height: 40,
+                    }}>
+                      {statusIcons[order.orderStatus] || <FiberManualRecord sx={{ color: COLORS.warning }} />}
+                    </Avatar>
+                  </ListItemAvatar>
+                  <Box sx={{ flex: 1 }}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: 'monospace' }}>
+                        {order.orderNumber}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: COLORS.gray500 }}>
+                        {formatTimeAgo(order.createdAt)}
+                      </Typography>
+                    </Stack>
+                    <Typography variant="body2" sx={{ color: COLORS.gray700, fontSize: 13 }}>
+                      {order.customer.fullName}
+                    </Typography>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 0.5 }}>
+                      <Typography variant="caption" sx={{ color: COLORS.primary, fontWeight: 600 }}>
+                        {order.total.toFixed(2)} TND
+                      </Typography>
+                      <Chip 
+                        label={order.orderStatus}
+                        size="small"
+                        sx={{ 
+                          fontSize: 10,
+                          height: 20,
+                          bgcolor: order.orderStatus === 'pending' ? alpha(COLORS.warning, 0.1) : alpha(COLORS.info, 0.1),
+                          color: order.orderStatus === 'pending' ? COLORS.warning : COLORS.info,
+                        }}
+                      />
+                    </Stack>
+                  </Box>
+                </MenuItem>
+              ))}
+            </>
+          )}
+        </Box>
+
+        <Box sx={{ 
+          p: 1.5, 
+          borderTop: `1px solid ${COLORS.gray200}`,
+          bgcolor: COLORS.gray50,
+        }}>
+          <Button 
+            fullWidth 
+            onClick={handleViewAllOrders}
+            sx={{ 
+              borderRadius: '8px',
+              fontFamily: 'Oswald',
+              color: COLORS.primary,
+              '&:hover': {
+                bgcolor: alpha(COLORS.primary, 0.08),
+              },
+            }}
+          >
+            View All Orders
+          </Button>
         </Box>
       </Menu>
     </>

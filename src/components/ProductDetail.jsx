@@ -1,497 +1,888 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
-  Typography,
   Grid,
-  Card,
-  CardMedia,
-  Chip,
+  Typography,
   Button,
-  Rating,
-  Divider,
-  List,
-  ListItem,
-  ListItemText,
   IconButton,
+  Rating,
+  Chip,
+  Divider,
+  TextField,
   Paper,
-  alpha,
+  Alert,
+  Snackbar,
+  CircularProgress,
+  Stepper,
+  Step,
+  StepLabel,
+  Card,
+  CardContent,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
   Stack,
+  alpha,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Avatar,
+  useMediaQuery,
+  useTheme,
   Breadcrumbs,
   Link,
+  Fade,
 } from '@mui/material';
-import { motion } from 'framer-motion';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
-import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
-import LocalShippingIcon from '@mui/icons-material/LocalShipping';
-import SecurityIcon from '@mui/icons-material/Security';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import '@fontsource/oswald';
+import {
+  ShoppingBag,
+  Favorite,
+  FavoriteBorder,
+  LocalShipping,
+  Verified,
+  WhatsApp,
+  ArrowBack,
+  CheckCircle,
+  Close,
+  Share,
+  Security,
+  Refresh,
+  Add,
+  Remove,
+  Star,
+  StarBorder,
+  Inventory,
+  Timeline,
+  Shield,
+  CreditCard,
+  LocalOffer,
+} from '@mui/icons-material';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useLanguage } from '../components/LanguageContext';
+import { useTranslation } from 'react-i18next';
+import { getProductById, createOrder } from '../services/productService';
 
-// Import the same product data (you can move this to a separate file)
-import desertOud from '../assets/wqar-C.png';
-import coastalBreeze from '../assets/wqar-D.png';
-import saharaAmber from '../assets/wqar-S.png';
-import mediterraneanSalt from '../assets/wqar-C.png';
-import midnightDune from '../assets/wqar-S.png';
-import coralReef from '../assets/wqar-D.png';
-import goldenSand from '../assets/wqar-C.png';
-import saltStone from '../assets/wqar-S.png';
+const COLORS = {
+  primary: '#8C5A3C',
+  primaryLight: '#B07850',
+  primaryDark: '#5C3520',
+  secondary: '#D4A574',
+  success: '#10B981',
+  error: '#EF4444',
+  warning: '#F59E0B',
+  info: '#3B82F6',
+  white: '#FFFFFF',
+  gray50: '#FAFAFA',
+  gray100: '#F5F5F5',
+  gray200: '#EEEEEE',
+  gray300: '#E0E0E0',
+  gray400: '#BDBDBD',
+  gray500: '#9E9E9E',
+  gray600: '#757575',
+  gray700: '#616161',
+  gray800: '#424242',
+  gray900: '#212121',
+};
 
-const productsData = {
-  1: {
-    id: 1,
-    name: 'Desert Oud',
-    description: 'Desert Oud is a masterful blend that transports you to the heart of the Arabian desert.',
-    fullDescription: 'Desert Oud is a masterful blend that transports you to the heart of the Arabian desert.',
-    price: 89,
-    oldPrice: 120,
-    image: desertOud,
-    sizes: ['50ml', '100ml'],
-    rating: 4.8,
-    reviews: 124,
-    notes: {
-      top: ['Saffron', 'Bergamot'],
-      heart: ['Oud Wood', 'Amber', 'Sandalwood'],
-      base: ['Vanilla', 'Musk', 'Patchouli']
-    },
-    longevity: '8-10 hours',
-    sillage: 'Heavy',
-    season: ['Fall', 'Winter']
-  },
-  2: {
-    id: 2,
-    name: 'Coastal Breeze',
-    description: 'Fresh sea salt, bergamot, and white musk. A refreshing journey along pristine shorelines.',
-    fullDescription: 'Coastal Breeze captures the invigorating essence of a seaside morning.',
-    price: 79,
-    oldPrice: 110,
-    image: coastalBreeze,
-    sizes: ['50ml', '100ml'],
-    rating: 4.9,
-    reviews: 98,
-    notes: {
-      top: ['Bergamot', 'Lemon', 'Sea Salt'],
-      heart: ['Jasmine', 'Marine Accord', 'Algae'],
-      base: ['White Musk', 'Driftwood', 'Ambergris']
-    },
-    longevity: '6-8 hours',
-    sillage: 'Moderate',
-    season: ['Spring', 'Summer']
-  },
-  3: {
-    id: 3,
-    name: 'Sahara Amber',
-    description: 'Rich amber, vanilla, and exotic spices. A warm embrace reminiscent of desert nights.',
-    fullDescription: 'Sahara Amber is a luxurious oriental fragrance inspired by the mystique of the Sahara.',
-    price: 94,
-    oldPrice: 125,
-    image: saharaAmber,
-    sizes: ['50ml', '100ml'],
-    rating: 4.7,
-    reviews: 87,
-    notes: {
-      top: ['Cinnamon', 'Cardamom', 'Orange Blossom'],
-      heart: ['Amber', 'Vanilla Absolute', 'Exotic Spices'],
-      base: ['Benzoin', 'Labdanum', 'Sandalwood']
-    },
-    longevity: '10-12 hours',
-    sillage: 'Heavy',
-    season: ['Fall', 'Winter']
-  },
-  4: {
-    id: 4,
-    name: 'Mediterranean Salt',
-    description: 'Crisp ocean air, jasmine, and driftwood. An aromatic voyage across turquoise waters.',
-    fullDescription: 'Mediterranean Salt evokes the vibrant energy of the Mediterranean coast.',
-    price: 84,
-    oldPrice: 115,
-    image: mediterraneanSalt,
-    sizes: ['50ml', '100ml'],
-    rating: 4.8,
-    reviews: 112,
-    notes: {
-      top: ['Lemon', 'Bergamot', 'Rosemary'],
-      heart: ['Jasmine', 'Fig Leaf', 'Sea Breeze'],
-      base: ['Driftwood', 'Cedar', 'Moss']
-    },
-    longevity: '7-9 hours',
-    sillage: 'Moderate',
-    season: ['Spring', 'Summer']
-  },
-  5: {
-    id: 5,
-    name: 'Midnight Dune',
-    description: 'Dark leather, smoky incense, and cedarwood. A mysterious scent for the night.',
-    fullDescription: 'Midnight Dune is a bold, sophisticated fragrance for those who command the night.',
-    price: 99,
-    oldPrice: 135,
-    image: midnightDune,
-    sizes: ['50ml', '100ml'],
-    rating: 4.9,
-    reviews: 156,
-    notes: {
-      top: ['Smoky Incense', 'Black Pepper', 'Saffron'],
-      heart: ['Dark Leather', 'Oud', 'Tobacco'],
-      base: ['Cedarwood', 'Vetiver', 'Amber']
-    },
-    longevity: '10-12 hours',
-    sillage: 'Very Heavy',
-    season: ['Fall', 'Winter']
-  },
-  6: {
-    id: 6,
-    name: 'Coral Reef',
-    description: 'Tropical fruits, sea moss, and coral flower. A vibrant underwater paradise.',
-    fullDescription: 'Coral Reef is a vibrant, aquatic fragrance that celebrates the beauty of coral gardens.',
-    price: 74,
-    oldPrice: 105,
-    image: coralReef,
-    sizes: ['50ml', '100ml'],
-    rating: 4.6,
-    reviews: 73,
-    notes: {
-      top: ['Tropical Fruits', 'Mandarin', 'Watermelon'],
-      heart: ['Coral Flower', 'Sea Moss', 'Ylang-Ylang'],
-      base: ['White Woods', 'Musk', 'Ambergris']
-    },
-    longevity: '5-7 hours',
-    sillage: 'Light',
-    season: ['Summer']
-  },
-  7: {
-    id: 7,
-    name: 'Golden Sand',
-    description: 'Warm vanilla, tonka bean, and sun-kissed musk. A radiant beachside glow.',
-    fullDescription: 'Golden Sand captures the warmth of sun-drenched shores.',
-    price: 86,
-    oldPrice: 118,
-    image: goldenSand,
-    sizes: ['50ml', '100ml'],
-    rating: 4.8,
-    reviews: 104,
-    notes: {
-      top: ['Coconut', 'Solar Notes', 'Bergamot'],
-      heart: ['Vanilla', 'Tonka Bean', 'Tiare Flower'],
-      base: ['Sun-kissed Musk', 'Sandalwood', 'Caramel']
-    },
-    longevity: '8-10 hours',
-    sillage: 'Moderate',
-    season: ['Summer']
-  },
-  8: {
-    id: 8,
-    name: 'Salt & Stone',
-    description: 'Mineral accord, sage, and sea salt crystals. An earthy coastal mineral blend.',
-    fullDescription: 'Salt & Stone is a unique, mineral-forward fragrance that bridges earth and sea.',
-    price: 81,
-    oldPrice: 112,
-    image: saltStone,
-    sizes: ['50ml', '100ml'],
-    rating: 4.7,
-    reviews: 91,
-    notes: {
-      top: ['Sea Salt Crystals', 'Mineral Accord', 'Citrus'],
-      heart: ['Sage', 'Lavender', 'Geranium'],
-      base: ['Vetiver', 'Oakmoss', 'Driftwood']
-    },
-    longevity: '7-9 hours',
-    sillage: 'Moderate',
-    season: ['Spring', 'Fall']
-  },
+const getFullImageUrl = (imagePath) => {
+  if (!imagePath) return null;
+  if (imagePath.startsWith('http')) return imagePath;
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const cleanBaseUrl = baseUrl.replace(/\/api$/, '');
+  const cleanPath = imagePath.replace(/^\/+/, '');
+  return `${cleanBaseUrl}/${cleanPath}`;
 };
 
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const product = productsData[id];
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { t } = useTranslation();
+  const { isRTL, currentLanguage } = useLanguage();
+  
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedSize, setSelectedSize] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const [wishlisted, setWishlisted] = useState(false);
+  const [activeImage, setActiveImage] = useState(0);
+  const [orderDialogOpen, setOrderDialogOpen] = useState(false);
+  const [orderStep, setOrderStep] = useState(0);
+  const [orderSubmitting, setOrderSubmitting] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [imageLoaded, setImageLoaded] = useState(false);
+  
+  const [orderForm, setOrderForm] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    postalCode: '',
+    paymentMethod: 'cash_on_delivery',
+    notes: ''
+  });
 
-  if (!product) {
+  useEffect(() => {
+    loadProduct();
+    window.scrollTo(0, 0);
+  }, [id]);
+
+  const loadProduct = async () => {
+    setLoading(true);
+    try {
+      const response = await getProductById(id);
+      setProduct(response.data);
+      if (response.data.quantity && response.data.quantity.length > 0) {
+        setSelectedSize(response.data.quantity[0]);
+      }
+    } catch (error) {
+      console.error('Error loading product:', error);
+      setSnackbar({ open: true, message: 'Error loading product', severity: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleQuantityChange = (delta) => {
+    const newQuantity = quantity + delta;
+    if (newQuantity >= 1 && newQuantity <= (product?.stock || 99)) {
+      setQuantity(newQuantity);
+    }
+  };
+
+  const handleOrderFormChange = (field, value) => {
+    setOrderForm({ ...orderForm, [field]: value });
+  };
+
+  const handleNextStep = () => {
+    if (orderStep === 0) {
+      if (!orderForm.fullName || !orderForm.email || !orderForm.phone) {
+        setSnackbar({ open: true, message: 'Please fill all required fields', severity: 'error' });
+        return;
+      }
+      if (!orderForm.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+        setSnackbar({ open: true, message: 'Please enter a valid email', severity: 'error' });
+        return;
+      }
+    } else if (orderStep === 1) {
+      if (!orderForm.address || !orderForm.city) {
+        setSnackbar({ open: true, message: 'Please fill address details', severity: 'error' });
+        return;
+      }
+    }
+    setOrderStep(orderStep + 1);
+  };
+
+  const handlePrevStep = () => {
+    setOrderStep(orderStep - 1);
+  };
+
+  const handleSubmitOrder = async () => {
+    if (!selectedSize) {
+      setSnackbar({ open: true, message: 'Please select a size', severity: 'error' });
+      return;
+    }
+
+    setOrderSubmitting(true);
+    try {
+      const currentPrice = product.discountedPrice || product.price;
+      const orderData = {
+        productId: product._id,
+        productName: product.name,
+        size: selectedSize,
+        quantity: quantity,
+        price: currentPrice,
+        total: currentPrice * quantity,
+        customer: orderForm,
+        orderDate: new Date(),
+        status: 'pending'
+      };
+      
+      await createOrder(orderData);
+      setOrderSuccess(true);
+      
+      setTimeout(() => {
+        setOrderDialogOpen(false);
+        setOrderStep(0);
+        setOrderSuccess(false);
+        setOrderForm({
+          fullName: '', email: '', phone: '', address: '', city: '', postalCode: '', paymentMethod: 'cash_on_delivery', notes: ''
+        });
+        setQuantity(1);
+      }, 3000);
+    } catch (error) {
+      console.error('Error submitting order:', error);
+      setSnackbar({ open: true, message: 'Error placing order. Please try again.', severity: 'error' });
+    } finally {
+      setOrderSubmitting(false);
+    }
+  };
+
+  if (loading) {
     return (
-      <Container sx={{ py: 8, textAlign: 'center' }}>
-        <Typography variant="h4">Product not found</Typography>
-        <Button variant="contained" onClick={() => navigate('/')} sx={{ mt: 2 }}>
-          Back to Home
-        </Button>
-      </Container>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh', bgcolor: COLORS.gray50 }}>
+        <CircularProgress sx={{ color: COLORS.primary }} />
+      </Box>
     );
   }
 
+  if (!product) {
+    return (
+      <Box sx={{ bgcolor: COLORS.gray50, minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Container sx={{ textAlign: 'center', py: 8 }}>
+          <Typography variant="h5" sx={{ mb: 2, fontFamily: 'Inter' }}>Product not found</Typography>
+          <Button onClick={() => navigate('/')} variant="contained" sx={{ bgcolor: COLORS.primary, borderRadius: '40px' }}>
+            Back to Home
+          </Button>
+        </Container>
+      </Box>
+    );
+  }
+
+  const discount = product.discountPercentage || 0;
+  const currentPrice = product.discountedPrice || product.price;
+  const isOutOfStock = product.stock === 0;
+  const mainImage = product.images?.[activeImage]?.url 
+    ? getFullImageUrl(product.images[activeImage].url)
+    : '/placeholder-image.jpg';
+
   return (
-    <Container maxWidth="lg" sx={{ py: 5 }}>
-      {/* Breadcrumbs */}
-      <Breadcrumbs sx={{ mb: 3 }}>
-        <Link color="inherit" onClick={() => navigate('/')} sx={{ cursor: 'pointer' }}>
-          Home
-        </Link>
-        <Link color="inherit" onClick={() => navigate('/')} sx={{ cursor: 'pointer' }}>
-          The Wqar Collection
-        </Link>
-        <Typography color="text.primary">{product.name}</Typography>
-      </Breadcrumbs>
-
-      {/* Back Button */}
-      <IconButton onClick={() => navigate(-1)} sx={{ mb: 2 }}>
-        <ArrowBackIcon />
-      </IconButton>
-
-      <Grid container spacing={4}>
-        {/* Product Image */}
-        <Grid item xs={12} md={6}>
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
+    <Box sx={{ bgcolor: COLORS.gray50, minHeight: '100vh' }}>
+      <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>
+        {/* Breadcrumbs */}
+        <Breadcrumbs sx={{ mb: 3, color: COLORS.gray600 }}>
+          <Link 
+            href="/" 
+            onClick={(e) => { e.preventDefault(); navigate('/'); }}
+            sx={{ textDecoration: 'none', color: COLORS.gray600, '&:hover': { color: COLORS.primary } }}
           >
-            <Card sx={{ borderRadius: '20px', overflow: 'hidden' }}>
-              <CardMedia
-                component="img"
-                image={product.image}
-                alt={product.name}
-                sx={{ width: '100%', height: 'auto' }}
-              />
-            </Card>
-          </motion.div>
-        </Grid>
-
-        {/* Product Info */}
-        <Grid item xs={12} md={6}>
-          <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
+            Home
+          </Link>
+          <Link 
+            href="/collection" 
+            onClick={(e) => { e.preventDefault(); navigate('/'); }}
+            sx={{ textDecoration: 'none', color: COLORS.gray600, '&:hover': { color: COLORS.primary } }}
           >
-            <Typography
-              variant="h3"
-              sx={{
-                fontFamily: 'Oswald, sans-serif',
-                fontWeight: 600,
-                color: '#8C5A3C',
-                mb: 1,
+            Collection
+          </Link>
+          <Typography color={COLORS.primary} sx={{ fontWeight: 500 }}>{product.name}</Typography>
+        </Breadcrumbs>
+
+        <Grid container spacing={5}>
+          {/* Product Images - Left Column */}
+          <Grid item xs={12} md={6}>
+            <Box sx={{ position: 'sticky', top: 100 }}>
+              {/* Main Image */}
+              <Paper
+                elevation={0}
+                sx={{
+                  borderRadius: '20px',
+                  overflow: 'hidden',
+                  bgcolor: COLORS.white,
+                  border: `1px solid ${COLORS.gray200}`,
+                  mb: 2,
+                  position: 'relative',
+                }}
+              >
+                {!imageLoaded && (
+                  <Box sx={{ 
+                    position: 'absolute', 
+                    top: '50%', 
+                    left: '50%', 
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: 1,
+                  }}>
+                    <CircularProgress size={40} sx={{ color: COLORS.primary }} />
+                  </Box>
+                )}
+                <img
+                  src={mainImage}
+                  alt={product.name}
+                  style={{ 
+                    width: '100%', 
+                    height: 'auto', 
+                    maxHeight: '500px',
+                    objectFit: 'contain',
+                    opacity: imageLoaded ? 1 : 0,
+                    transition: 'opacity 0.3s ease',
+                    cursor: 'zoom-in',
+                  }}
+                  onLoad={() => setImageLoaded(true)}
+                  onError={(e) => { e.target.src = '/placeholder-image.jpg'; setImageLoaded(true); }}
+                />
+              </Paper>
+              
+              {/* Thumbnails */}
+              {product.images && product.images.length > 1 && (
+                <Stack direction="row" spacing={1.5} sx={{ overflowX: 'auto', pb: 1, justifyContent: 'center' }}>
+                  {product.images.map((img, idx) => (
+                    <motion.div
+                      key={idx}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Paper
+                        elevation={0}
+                        onClick={() => { setActiveImage(idx); setImageLoaded(false); }}
+                        sx={{
+                          width: 70,
+                          height: 70,
+                          borderRadius: '12px',
+                          overflow: 'hidden',
+                          cursor: 'pointer',
+                          border: activeImage === idx ? `2px solid ${COLORS.primary}` : `1px solid ${COLORS.gray200}`,
+                          transition: 'all 0.2s ease',
+                          '&:hover': { borderColor: COLORS.primary },
+                          flexShrink: 0,
+                        }}
+                      >
+                        <img
+                          src={getFullImageUrl(img.url)}
+                          alt=""
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          onError={(e) => { e.target.src = '/placeholder-image.jpg'; }}
+                        />
+                      </Paper>
+                    </motion.div>
+                  ))}
+                </Stack>
+              )}
+            </Box>
+          </Grid>
+
+          {/* Product Info - Right Column */}
+          <Grid item xs={12} md={6}>
+            {/* Badges */}
+            <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap', gap: 1 }}>
+              {product.featured && (
+                <Chip 
+                  label="Featured" 
+                  size="small" 
+                  sx={{ bgcolor: COLORS.warning, color: COLORS.white, fontWeight: 500, borderRadius: '20px' }} 
+                />
+              )}
+              {discount > 0 && (
+                <Chip 
+                  label={`${discount}% OFF`} 
+                  size="small" 
+                  sx={{ bgcolor: COLORS.success, color: COLORS.white, fontWeight: 500, borderRadius: '20px' }} 
+                />
+              )}
+              {product.stock < 10 && product.stock > 0 && (
+                <Chip 
+                  label={`Only ${product.stock} left`} 
+                  size="small" 
+                  sx={{ bgcolor: COLORS.error, color: COLORS.white, fontWeight: 500, borderRadius: '20px' }} 
+                />
+              )}
+            </Stack>
+
+            {/* Title */}
+            <Typography 
+              variant="h3" 
+              sx={{ 
+                fontWeight: 700, 
+                mb: 1.5, 
+                fontFamily: 'Oswald',
+                letterSpacing: '-0.02em',
+                color: COLORS.gray900,
               }}
             >
               {product.name}
             </Typography>
             
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-              <Rating value={product.rating} readOnly sx={{ color: '#8C5A3C' }} />
-              <Typography variant="body2" color="text.secondary">
-                ({product.reviews} reviews)
+            {/* Rating */}
+            <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 2 }}>
+              <Rating value={product.rating || 0} readOnly precision={0.5} size="small" />
+              <Typography variant="body2" sx={{ color: COLORS.gray600 }}>
+                {product.reviewCount || 0} reviews
               </Typography>
+              <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: COLORS.gray400 }} />
+              <Chip
+                label={product.gender?.toUpperCase()}
+                size="small"
+                sx={{ bgcolor: alpha(COLORS.primary, 0.1), color: COLORS.primary, fontWeight: 500, borderRadius: '20px' }}
+              />
+            </Stack>
+
+            {/* Price */}
+            <Box sx={{ mb: 3 }}>
+              {discount > 0 ? (
+                <Stack direction="row" alignItems="baseline" spacing={2}>
+                  <Typography 
+                    variant="h2" 
+                    sx={{ 
+                      fontWeight: 800, 
+                      color: COLORS.primary, 
+                      fontFamily: 'Oswald',
+                      fontSize: { xs: '36px', md: '48px' },
+                    }}
+                  >
+                    {currentPrice} TND
+                  </Typography>
+                  <Typography 
+                    variant="h5" 
+                    sx={{ 
+                      textDecoration: 'line-through', 
+                      color: COLORS.gray400,
+                      fontWeight: 400,
+                    }}
+                  >
+                    {product.price} TND
+                  </Typography>
+                </Stack>
+              ) : (
+                <Typography 
+                  variant="h2" 
+                  sx={{ 
+                    fontWeight: 800, 
+                    color: COLORS.primary, 
+                    fontFamily: 'Oswald',
+                    fontSize: { xs: '36px', md: '48px' },
+                  }}
+                >
+                  {currentPrice} TND
+                </Typography>
+              )}
             </Box>
 
-            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 2, mb: 2 }}>
-              <Typography
-                variant="h3"
-                sx={{
-                  fontFamily: 'Oswald, sans-serif',
-                  fontWeight: 700,
-                  color: '#8C5A3C',
-                }}
-              >
-                ${product.price}
-              </Typography>
-              <Typography
-                variant="h5"
-                sx={{
-                  color: alpha('#1A1A1A', 0.4),
-                  textDecoration: 'line-through',
-                }}
-              >
-                ${product.oldPrice}
-              </Typography>
-            </Box>
-
-            <Typography variant="body1" sx={{ mb: 3, lineHeight: 1.6 }}>
-              {product.fullDescription}
+            {/* Description */}
+            <Typography 
+              variant="body1" 
+              sx={{ 
+                mb: 3, 
+                color: COLORS.gray700, 
+                lineHeight: 1.8,
+                fontFamily: 'Inter',
+              }}
+            >
+              {product.description || product.fragrance}
             </Typography>
 
             <Divider sx={{ my: 3 }} />
 
-            {/* Size Selection */}
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-              Size
-            </Typography>
-            <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
-              {product.sizes.map((size) => (
-                <Button
-                  key={size}
-                  variant="outlined"
-                  sx={{
-                    borderColor: '#8C5A3C',
-                    color: '#8C5A3C',
-                    borderRadius: '40px',
-                    minWidth: '80px',
-                    '&:hover': {
-                      borderColor: '#6B4423',
-                      backgroundColor: alpha('#8C5A3C', 0.05),
-                    },
+            {/* Fragrance Notes */}
+            {product.fragrance && (
+              <Box sx={{ mb: 3 }}>
+                <Typography 
+                  variant="subtitle1" 
+                  sx={{ 
+                    fontWeight: 600, 
+                    mb: 1.5, 
+                    fontFamily: 'Oswald',
+                    letterSpacing: '0.02em',
                   }}
                 >
-                  {size}
-                </Button>
-              ))}
-            </Stack>
+                  Fragrance Profile
+                </Typography>
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    color: COLORS.gray600,
+                    fontFamily: 'Inter',
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {product.fragrance}
+                </Typography>
+              </Box>
+            )}
+
+            {/* Size Selection */}
+            {product.quantity && product.quantity.length > 0 && (
+              <Box sx={{ mb: 3 }}>
+                <Typography 
+                  variant="subtitle1" 
+                  sx={{ 
+                    fontWeight: 600, 
+                    mb: 1.5, 
+                    fontFamily: 'Oswald',
+                  }}
+                >
+                  Select Size
+                </Typography>
+                <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+                  {product.quantity.map((size) => (
+                    <Button
+                      key={size}
+                      variant={selectedSize === size ? 'contained' : 'outlined'}
+                      onClick={() => setSelectedSize(size)}
+                      disabled={isOutOfStock}
+                      sx={{
+                        borderRadius: '40px',
+                        px: 3.5,
+                        py: 1,
+                        minWidth: '80px',
+                        bgcolor: selectedSize === size ? COLORS.primary : 'transparent',
+                        borderColor: selectedSize === size ? COLORS.primary : COLORS.gray300,
+                        color: selectedSize === size ? COLORS.white : COLORS.gray700,
+                        fontFamily: 'Inter',
+                        fontWeight: 600,
+                        '&:hover': {
+                          bgcolor: selectedSize === size ? COLORS.primaryDark : alpha(COLORS.primary, 0.05),
+                          borderColor: COLORS.primary,
+                        },
+                      }}
+                    >
+                      {size}
+                    </Button>
+                  ))}
+                </Stack>
+              </Box>
+            )}
+
+            {/* Quantity */}
+            <Box sx={{ mb: 3 }}>
+              <Typography 
+                variant="subtitle1" 
+                sx={{ 
+                  fontWeight: 600, 
+                  mb: 1.5, 
+                  fontFamily: 'Oswald',
+                }}
+              >
+                Quantity
+              </Typography>
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    border: `1px solid ${COLORS.gray200}`,
+                    borderRadius: '40px',
+                    bgcolor: COLORS.white,
+                  }}
+                >
+                  <IconButton
+                    onClick={() => handleQuantityChange(-1)}
+                    disabled={quantity <= 1 || isOutOfStock}
+                    sx={{ borderRadius: '40px', px: 1.5 }}
+                  >
+                    <Remove sx={{ fontSize: 18 }} />
+                  </IconButton>
+                  <Typography sx={{ minWidth: 50, textAlign: 'center', fontWeight: 600 }}>
+                    {quantity}
+                  </Typography>
+                  <IconButton
+                    onClick={() => handleQuantityChange(1)}
+                    disabled={quantity >= (product.stock || 99) || isOutOfStock}
+                    sx={{ borderRadius: '40px', px: 1.5 }}
+                  >
+                    <Add sx={{ fontSize: 18 }} />
+                  </IconButton>
+                </Paper>
+                <Typography variant="body2" sx={{ color: COLORS.gray500 }}>
+                  {product.stock} available
+                </Typography>
+              </Stack>
+            </Box>
 
             {/* Action Buttons */}
-            <Stack direction="row" spacing={2} sx={{ mb: 4 }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3 }}>
               <Button
+                fullWidth
                 variant="contained"
-                startIcon={<ShoppingCartIcon />}
+                size="large"
+                startIcon={<ShoppingBag />}
+                onClick={() => setOrderDialogOpen(true)}
+                disabled={isOutOfStock}
                 sx={{
-                  backgroundColor: '#8C5A3C',
+                  bgcolor: COLORS.primary,
+                  '&:hover': { bgcolor: COLORS.primaryDark },
                   borderRadius: '40px',
-                  padding: '12px 32px',
-                  flex: 1,
-                  '&:hover': {
-                    backgroundColor: '#6B4423',
-                  },
+                  py: 1.5,
+                  fontFamily: 'Oswald',
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  letterSpacing: '0.02em',
+                  textTransform: 'none',
                 }}
               >
-                Add to Cart
+                {isOutOfStock ? 'Out of Stock' : 'Buy Now'}
               </Button>
+              
               <IconButton
+                onClick={() => setWishlisted(!wishlisted)}
                 sx={{
-                  border: `1px solid ${alpha('#8C5A3C', 0.3)}`,
-                  borderRadius: '50%',
-                  '&:hover': {
-                    backgroundColor: alpha('#8C5A3C', 0.05),
-                  },
+                  border: `1px solid ${COLORS.gray200}`,
+                  borderRadius: '40px',
+                  width: 56,
+                  height: 56,
+                  '&:hover': { borderColor: COLORS.primary, bgcolor: alpha(COLORS.primary, 0.05) },
                 }}
               >
-                <FavoriteBorderIcon sx={{ color: '#8C5A3C' }} />
+                {wishlisted ? <Favorite sx={{ color: COLORS.error }} /> : <FavoriteBorder sx={{ color: COLORS.gray600 }} />}
               </IconButton>
             </Stack>
 
-            {/* Shipping Info */}
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2,
-                backgroundColor: alpha('#8C5A3C', 0.05),
-                borderRadius: '12px',
-                mb: 3,
-              }}
-            >
-              <Stack direction="row" spacing={3}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <LocalShippingIcon sx={{ color: '#8C5A3C', fontSize: 20 }} />
-                  <Typography variant="caption">Free Shipping</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <SecurityIcon sx={{ color: '#8C5A3C', fontSize: 20 }} />
-                  <Typography variant="caption">Secure Payment</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <RefreshIcon sx={{ color: '#8C5A3C', fontSize: 20 }} />
-                  <Typography variant="caption">30-Day Returns</Typography>
-                </Box>
-              </Stack>
-            </Paper>
-          </motion.div>
+            {/* Shipping Info Cards */}
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              <Grid item xs={6}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 1.5,
+                    borderRadius: '16px',
+                    bgcolor: COLORS.white,
+                    border: `1px solid ${COLORS.gray100}`,
+                    textAlign: 'center',
+                  }}
+                >
+                  <LocalShipping sx={{ color: COLORS.primary, fontSize: 24, mb: 0.5 }} />
+                  <Typography variant="caption" sx={{ display: 'block', color: COLORS.gray700, fontWeight: 500 }}>
+                    Free Shipping
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: COLORS.gray500, fontSize: '10px' }}>
+                    on orders over 100 TND
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={6}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 1.5,
+                    borderRadius: '16px',
+                    bgcolor: COLORS.white,
+                    border: `1px solid ${COLORS.gray100}`,
+                    textAlign: 'center',
+                  }}
+                >
+                  <Verified sx={{ color: COLORS.primary, fontSize: 24, mb: 0.5 }} />
+                  <Typography variant="caption" sx={{ display: 'block', color: COLORS.gray700, fontWeight: 500 }}>
+                    Authentic
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: COLORS.gray500, fontSize: '10px' }}>
+                    100% genuine products
+                  </Typography>
+                </Paper>
+              </Grid>
+            </Grid>
+          </Grid>
         </Grid>
+      </Container>
 
-        {/* Fragrance Notes Section */}
-        <Grid item xs={12}>
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <Paper
-              elevation={0}
-              sx={{
-                p: 4,
-                backgroundColor: alpha('#8C5A3C', 0.03),
-                borderRadius: '20px',
-                mt: 4,
-              }}
-            >
-              <Typography
-                variant="h5"
-                sx={{
-                  fontFamily: 'Oswald, sans-serif',
-                  fontWeight: 600,
-                  color: '#8C5A3C',
-                  mb: 3,
-                }}
+      {/* Order Dialog */}
+      <Dialog 
+        open={orderDialogOpen} 
+        onClose={() => !orderSubmitting && setOrderDialogOpen(false)} 
+        maxWidth="md" 
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: '24px', overflow: 'hidden', maxWidth: 550, mx: 'auto' }
+        }}
+      >
+        <DialogTitle sx={{ bgcolor: COLORS.primary, color: COLORS.white, py: 2.5, px: 3 }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: 'Oswald', letterSpacing: '0.02em' }}>
+              Complete Your Order
+            </Typography>
+            <IconButton onClick={() => setOrderDialogOpen(false)} sx={{ color: COLORS.white }}>
+              <Close />
+            </IconButton>
+          </Stack>
+        </DialogTitle>
+        
+        <DialogContent sx={{ p: 3 }}>
+          {!orderSuccess ? (
+            <>
+              {/* Order Summary */}
+              <Card sx={{ mb: 3, bgcolor: COLORS.gray50, borderRadius: '16px', elevation: 0, border: `1px solid ${COLORS.gray200}` }}>
+                <CardContent sx={{ p: 2.5 }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, fontFamily: 'Oswald' }}>
+                    Order Summary
+                  </Typography>
+                  <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+                    <Typography variant="body2" sx={{ color: COLORS.gray700 }}>{product.name}</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>{currentPrice} TND</Typography>
+                  </Stack>
+                  <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+                    <Typography variant="body2" sx={{ color: COLORS.gray700 }}>Size: {selectedSize}</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>x{quantity}</Typography>
+                  </Stack>
+                  <Divider sx={{ my: 1.5 }} />
+                  <Stack direction="row" justifyContent="space-between">
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Total</Typography>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700, color: COLORS.primary }}>
+                      {(currentPrice * quantity).toFixed(2)} TND
+                    </Typography>
+                  </Stack>
+                </CardContent>
+              </Card>
+
+              {/* Stepper */}
+              <Stepper activeStep={orderStep} sx={{ mb: 3 }}>
+                <Step><StepLabel>Info</StepLabel></Step>
+                <Step><StepLabel>Address</StepLabel></Step>
+                <Step><StepLabel>Payment</StepLabel></Step>
+              </Stepper>
+
+              {/* Step 1: Contact Info */}
+              {orderStep === 0 && (
+                <Stack spacing={2}>
+                  <TextField
+                    fullWidth
+                    label="Full Name *"
+                    value={orderForm.fullName}
+                    onChange={(e) => handleOrderFormChange('fullName', e.target.value)}
+                    required
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                  />
+                  <TextField
+                    fullWidth
+                    label="Email *"
+                    type="email"
+                    value={orderForm.email}
+                    onChange={(e) => handleOrderFormChange('email', e.target.value)}
+                    required
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                  />
+                  <TextField
+                    fullWidth
+                    label="Phone Number *"
+                    value={orderForm.phone}
+                    onChange={(e) => handleOrderFormChange('phone', e.target.value)}
+                    placeholder="+216 XX XXX XXX"
+                    required
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                  />
+                </Stack>
+              )}
+
+              {/* Step 2: Shipping Address */}
+              {orderStep === 1 && (
+                <Stack spacing={2}>
+                  <TextField
+                    fullWidth
+                    label="Address *"
+                    value={orderForm.address}
+                    onChange={(e) => handleOrderFormChange('address', e.target.value)}
+                    required
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                  />
+                  <TextField
+                    fullWidth
+                    label="City *"
+                    value={orderForm.city}
+                    onChange={(e) => handleOrderFormChange('city', e.target.value)}
+                    required
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                  />
+                  <TextField
+                    fullWidth
+                    label="Postal Code"
+                    value={orderForm.postalCode}
+                    onChange={(e) => handleOrderFormChange('postalCode', e.target.value)}
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                  />
+                </Stack>
+              )}
+
+              {/* Step 3: Payment */}
+              {orderStep === 2 && (
+                <Stack spacing={2}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>Payment Method</Typography>
+                  <RadioGroup
+                    value={orderForm.paymentMethod}
+                    onChange={(e) => handleOrderFormChange('paymentMethod', e.target.value)}
+                  >
+                    <FormControlLabel 
+                      value="cash_on_delivery" 
+                      control={<Radio />} 
+                      label="Cash on Delivery (Pay when you receive)" 
+                      sx={{ mb: 1 }}
+                    />
+                    <FormControlLabel 
+                      value="bank_transfer" 
+                      control={<Radio />} 
+                      label="Bank Transfer (You will receive bank details)" 
+                    />
+                  </RadioGroup>
+                  
+                  <TextField
+                    fullWidth
+                    label="Additional Notes"
+                    multiline
+                    rows={3}
+                    value={orderForm.notes}
+                    onChange={(e) => handleOrderFormChange('notes', e.target.value)}
+                    placeholder="Any special requests or notes for delivery..."
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                  />
+                </Stack>
+              )}
+            </>
+          ) : (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 200, damping: 20 }}
               >
-                Fragrance Notes
+                <CheckCircle sx={{ fontSize: 80, color: COLORS.success, mb: 2 }} />
+              </motion.div>
+              <Typography variant="h5" sx={{ fontWeight: 700, mb: 2, fontFamily: 'Oswald' }}>
+                Order Placed Successfully!
               </Typography>
-              <Grid container spacing={4}>
-                <Grid item xs={12} md={4}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-                    Top Notes
-                  </Typography>
-                  <List dense>
-                    {product.notes.top.map((note) => (
-                      <ListItem key={note} sx={{ px: 0 }}>
-                        <ListItemText primary={note} />
-                      </ListItem>
-                    ))}
-                  </List>
-                </Grid>
-                <Grid item xs={12} md={4}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-                    Heart Notes
-                  </Typography>
-                  <List dense>
-                    {product.notes.heart.map((note) => (
-                      <ListItem key={note} sx={{ px: 0 }}>
-                        <ListItemText primary={note} />
-                      </ListItem>
-                    ))}
-                  </List>
-                </Grid>
-                <Grid item xs={12} md={4}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-                    Base Notes
-                  </Typography>
-                  <List dense>
-                    {product.notes.base.map((note) => (
-                      <ListItem key={note} sx={{ px: 0 }}>
-                        <ListItemText primary={note} />
-                      </ListItem>
-                    ))}
-                  </List>
-                </Grid>
-              </Grid>
-              
-              <Divider sx={{ my: 3 }} />
-              
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="body2" color="text.secondary">
-                    Longevity
-                  </Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                    {product.longevity}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="body2" color="text.secondary">
-                    Sillage
-                  </Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                    {product.sillage}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="body2" color="text.secondary">
-                    Best Season
-                  </Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                    {product.season.join(' • ')}
-                  </Typography>
-                </Grid>
-              </Grid>
-            </Paper>
-          </motion.div>
-        </Grid>
-      </Grid>
-    </Container>
+              <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+                Thank you for your purchase.
+              </Typography>
+              <Typography variant="body2" color="textSecondary">
+                We will contact you within 24 hours to confirm your order.
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        
+        <DialogActions sx={{ p: 3, borderTop: `1px solid ${COLORS.gray100}` }}>
+          {!orderSuccess && (
+            <>
+              {orderStep > 0 && (
+                <Button onClick={handlePrevStep} variant="outlined" sx={{ borderRadius: '40px' }}>
+                  Back
+                </Button>
+              )}
+              {orderStep < 2 ? (
+                <Button 
+                  onClick={handleNextStep} 
+                  variant="contained" 
+                  sx={{ bgcolor: COLORS.primary, borderRadius: '40px', px: 4, '&:hover': { bgcolor: COLORS.primaryDark } }}
+                >
+                  Continue
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleSubmitOrder}
+                  variant="contained"
+                  disabled={orderSubmitting}
+                  sx={{ bgcolor: COLORS.primary, borderRadius: '40px', px: 4, '&:hover': { bgcolor: COLORS.primaryDark } }}
+                >
+                  {orderSubmitting ? <CircularProgress size={24} sx={{ color: COLORS.white }} /> : 'Place Order'}
+                </Button>
+              )}
+            </>
+          )}
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity={snackbar.severity} sx={{ borderRadius: '12px' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Box>
   );
 };
 

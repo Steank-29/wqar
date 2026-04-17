@@ -39,7 +39,7 @@ const userSchema = new mongoose.Schema({
   },
   gender: {
     type: String,
-    enum: ['male', 'female'],
+    enum: ['male', 'female', 'other'],
     required: [true, 'Please specify gender']
   },
   phoneNumber: {
@@ -48,13 +48,47 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['super_admin', 'admin'],
+    enum: ['super-admin', 'admin'],
     default: 'admin'
   },
   isActive: {
     type: Boolean,
     default: true
   },
+  // New: Track who created this user
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  // New: API permissions - what APIs this user can access
+  apiPermissions: {
+    type: [String],
+    default: [] // Empty array means all APIs allowed (for super admin)
+  },
+  // New: Blocked APIs (for admin restrictions)
+  blockedApis: {
+    type: [String],
+    default: []
+  },
+    // Add to your userSchema
+    isBlocked: {
+    type: Boolean,
+    default: false
+    },
+    blockedAt: {
+    type: Date
+    },
+    blockedUntil: {
+    type: Date
+    },
+    blockReason: {
+    type: String,
+    default: ''
+    },
+    blockedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+    },
   addresses: [{
     street: String,
     city: String,
@@ -71,19 +105,18 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Encrypt password using bcrypt
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) {
-    next();
+userSchema.pre('save', async function() {
+  // Only hash the password if it has been modified (or is new)
+  if (this.isModified('password')) {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
   }
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
 });
 
 // Sign JWT and return
 userSchema.methods.getSignedJwtToken = function() {
   return jwt.sign(
-    { id: this._id, role: this.role },
+    { id: this._id, role: this.role, apiPermissions: this.apiPermissions },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRE }
   );
@@ -92,6 +125,23 @@ userSchema.methods.getSignedJwtToken = function() {
 // Match user entered password to hashed password in database
 userSchema.methods.matchPassword = async function(enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
+};
+
+// New: Check if user can access specific API
+userSchema.methods.canAccessApi = function(apiPath, method) {
+  // Super admin has full access
+  if (this.role === 'super-admin') {
+    return true;
+  }
+  
+  // If no permissions defined, allow access
+  if (this.apiPermissions.length === 0) {
+    return true;
+  }
+  
+  // Check if API is blocked for this user
+  const apiKey = `${method}:${apiPath}`;
+  return !this.blockedApis.includes(apiKey);
 };
 
 const User = mongoose.model('User', userSchema);

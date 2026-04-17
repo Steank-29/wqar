@@ -1,3 +1,4 @@
+// components/Navbar.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import {
   AppBar,
@@ -19,6 +20,9 @@ import {
   useMediaQuery,
   useTheme,
   Button,
+  Badge,
+  Avatar,
+  Stack,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -28,18 +32,23 @@ import {
   ChevronRight as ChevronRightIcon,
   Menu as MenuIcon,
   Close as CloseIcon,
+  Add,
+  Remove,
+  Delete,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from './LanguageContext';
+import { useCart } from '../context/CartContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import '@fontsource/oswald';
 
 // Import your logo from assets
 import logo from '../assets/LogoW.png';
 
-// Styled components with RTL support
+// ==================== STYLED COMPONENTS (DEFINED FIRST) ====================
+
 const StyledAppBar = styled(AppBar)(({ theme, isSticky }) => ({
   backgroundColor: isSticky ? '#8C5A3C' : '#FFFFFF',
   boxShadow: isSticky ? '0 4px 20px rgba(0,0,0,0.1)' : '0 2px 10px rgba(0,0,0,0.05)',
@@ -94,40 +103,36 @@ const IconButtonStyled = styled(IconButton)(({ theme, isSticky }) => ({
   },
 }));
 
-const SearchContainer = styled(Box)(({ theme, isSticky }) => ({
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  backgroundColor: isSticky ? '#8C5A3C' : '#FFFFFF',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  zIndex: 1200,
-  padding: '0 24px',
-  boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-  direction: 'ltr', // Keep search input LTR for better UX
-}));
-
-const SearchInput = styled(InputBase)(({ theme, isSticky }) => ({
-  width: '100%',
-  maxWidth: '600px',
-  fontSize: { xs: '18px', sm: '24px' },
-  fontFamily: 'Oswald, sans-serif',
-  fontWeight: 400,
-  letterSpacing: '0.5px',
-  color: isSticky ? '#FFFFFF' : '#8C5A3C',
-  '& .MuiInputBase-input': {
-    padding: '12px 0',
-    textAlign: 'center',
-    '&::placeholder': {
-      color: alpha(isSticky ? '#FFFFFF' : '#8C5A3C', 0.6),
-      fontSize: { xs: '16px', sm: '20px' },
-      fontFamily: 'Oswald, sans-serif',
-    },
+const CartDrawer = styled(Drawer)(({ theme }) => ({
+  '& .MuiDrawer-paper': {
+    width: { xs: '100%', sm: 420 },
+    maxWidth: '100%',
+    backgroundColor: '#FFFFFF',
+    boxSizing: 'border-box',
   },
 }));
+
+const CartItem = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  gap: 16,
+  padding: '16px',
+  borderBottom: `1px solid ${alpha('#000', 0.08)}`,
+  '&:hover': {
+    backgroundColor: alpha('#8C5A3C', 0.02),
+  },
+}));
+
+const QuantityButton = styled(IconButton)({
+  width: 32,
+  height: 32,
+  border: '1px solid #E0E0E0',
+  borderRadius: '40px',
+  '&:hover': {
+    backgroundColor: '#8C5A3C',
+    color: '#FFFFFF',
+    borderColor: '#8C5A3C',
+  },
+});
 
 const TopBarContainer = styled(Box)({
   backgroundColor: '#8C5A3C',
@@ -149,6 +154,41 @@ const SliderText = styled(Typography)({
   px: { xs: 1, sm: 0 },
 });
 
+const SearchContainer = styled(Box)(({ theme, isSticky }) => ({
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: isSticky ? '#8C5A3C' : '#FFFFFF',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  zIndex: 1200,
+  padding: '0 24px',
+  boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+  direction: 'ltr',
+}));
+
+const SearchInput = styled(InputBase)(({ theme, isSticky }) => ({
+  width: '100%',
+  maxWidth: '600px',
+  fontSize: { xs: '18px', sm: '24px' },
+  fontFamily: 'Oswald, sans-serif',
+  fontWeight: 400,
+  letterSpacing: '0.5px',
+  color: isSticky ? '#FFFFFF' : '#8C5A3C',
+  '& .MuiInputBase-input': {
+    padding: '12px 0',
+    textAlign: 'center',
+    '&::placeholder': {
+      color: alpha(isSticky ? '#FFFFFF' : '#8C5A3C', 0.6),
+      fontSize: { xs: '16px', sm: '20px' },
+      fontFamily: 'Oswald, sans-serif',
+    },
+  },
+}));
+
 const MobileDrawer = styled(Drawer)(({ theme }) => ({
   '& .MuiDrawer-paper': {
     width: '280px',
@@ -167,6 +207,8 @@ const DrawerHeader = styled(Box)({
   color: '#FFFFFF',
 });
 
+// ==================== MAIN COMPONENT ====================
+
 const Navbar = () => {
   const [isSticky, setIsSticky] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -182,6 +224,8 @@ const Navbar = () => {
   const location = useLocation();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
+  
+  const { cart, cartCount, removeFromCart, updateQuantity, isCartOpen, setIsCartOpen, subtotal, shippingCost, total } = useCart();
 
   // Update theme direction
   useEffect(() => {
@@ -196,8 +240,7 @@ const Navbar = () => {
 
   const navItems = [
     { label: t('navbar.home'), path: '/' },
-    { label: t('navbar.shopAll'), path: '/shop' },
-    { label: t('navbar.wqar'), path: '/wqar' },
+    { label: t('navbar.shopAll'), path: '/products' },
     { label: t('navbar.contact'), path: '/contact' },
   ];
 
@@ -222,12 +265,6 @@ const Navbar = () => {
     }
   }, [showSearch]);
 
-  // Update nav items when language changes
-  useEffect(() => {
-    // Force re-render of nav items
-    setCurrentSlide(prev => prev);
-  }, [currentLanguage, t]);
-
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % sliderTexts.length);
   };
@@ -248,7 +285,7 @@ const Navbar = () => {
 
   const handleSearchSubmit = (e) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
-      console.log('Searching for:', searchQuery);
+      navigate(`/products?search=${searchQuery}`);
       handleSearchClose();
     }
   };
@@ -257,13 +294,17 @@ const Navbar = () => {
     navigate('/login');
   };
 
-  const handleCart = () => {
-    console.log('Cart clicked');
+  const handleCartOpen = () => {
+    setIsCartOpen(true);
   };
 
-  const handleNavClick = (path) => {
-    navigate(path);
-    setMobileMenuOpen(false);
+  const getFullImageUrl = (imagePath) => {
+    if (!imagePath) return null;
+    if (imagePath.startsWith('http')) return imagePath;
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const cleanBaseUrl = baseUrl.replace(/\/api$/, '');
+    const cleanPath = imagePath.replace(/^\/+/, '');
+    return `${cleanBaseUrl}/${cleanPath}`;
   };
 
   const menuItems = (
@@ -292,7 +333,10 @@ const Navbar = () => {
         {navItems.map((item) => (
           <ListItem
             key={item.label}
-            onClick={() => handleNavClick(item.path)}
+            onClick={() => {
+              navigate(item.path);
+              setMobileMenuOpen(false);
+            }}
             sx={{
               backgroundColor: location.pathname === item.path ? alpha('#8C5A3C', 0.1) : 'transparent',
               '&:hover': {
@@ -316,7 +360,6 @@ const Navbar = () => {
         
         <Divider sx={{ my: 2 }} />
         
-        {/* Search in mobile menu */}
         <ListItem
           onClick={() => {
             setMobileMenuOpen(false);
@@ -341,7 +384,6 @@ const Navbar = () => {
           />
         </ListItem>
 
-        {/* Language switcher in mobile menu */}
         <ListItem>
           <Box sx={{ width: '100%', mt: 1 }}>
             <Typography
@@ -361,7 +403,6 @@ const Navbar = () => {
         </ListItem>
       </List>
       
-      {/* Login at bottom of drawer */}
       <Box sx={{ p: 2, borderTop: '1px solid #E0E0E0' }}>
         <Button
           fullWidth
@@ -383,7 +424,6 @@ const Navbar = () => {
           {t('navbar.loginSignUp')}
         </Button>
         
-        {/* Footer in drawer */}
         <Typography
           sx={{
             fontFamily: 'Oswald, sans-serif',
@@ -397,6 +437,215 @@ const Navbar = () => {
         </Typography>
       </Box>
     </Box>
+  );
+
+  // Cart Drawer Component
+  const CartDrawerComponent = () => (
+    <CartDrawer
+      anchor={isRTL ? 'left' : 'right'}
+      open={isCartOpen}
+      onClose={() => setIsCartOpen(false)}
+    >
+      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        {/* Header */}
+        <Box
+          sx={{
+            p: 2,
+            borderBottom: '1px solid #E0E0E0',
+            backgroundColor: '#8C5A3C',
+            color: '#FFFFFF',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <Typography variant="h6" sx={{ fontFamily: 'Oswald', fontWeight: 600 }}>
+            Your Cart ({cartCount} items)
+          </Typography>
+          <IconButton onClick={() => setIsCartOpen(false)} sx={{ color: '#FFFFFF' }}>
+            <CloseIcon />
+          </IconButton>
+        </Box>
+
+        {/* Cart Items */}
+        <Box sx={{ flex: 1, overflow: 'auto' }}>
+          {cart.length === 0 ? (
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '300px',
+                textAlign: 'center',
+                p: 3,
+              }}
+            >
+              <ShoppingCartIcon sx={{ fontSize: 64, color: '#CCC', mb: 2 }} />
+              <Typography variant="h6" sx={{ fontFamily: 'Oswald', color: '#666', mb: 1 }}>
+                Your cart is empty
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#999', mb: 3 }}>
+                Add some products to your cart and they will appear here
+              </Typography>
+              <Button
+                variant="contained"
+                onClick={() => {
+                  setIsCartOpen(false);
+                  navigate('/products');
+                }}
+                sx={{
+                  backgroundColor: '#8C5A3C',
+                  borderRadius: '40px',
+                  '&:hover': { backgroundColor: '#5C3520' },
+                }}
+              >
+                Start Shopping
+              </Button>
+            </Box>
+          ) : (
+            cart.map((item) => (
+              <CartItem key={item.variantKey}>
+                {/* Product Image */}
+                <Avatar
+                  src={getFullImageUrl(item.mainImage)}
+                  variant="rounded"
+                  sx={{ width: 80, height: 80, borderRadius: '12px' }}
+                >
+                  {item.name?.[0]}
+                </Avatar>
+
+                {/* Product Details */}
+                <Box sx={{ flex: 1 }}>
+                  <Typography
+                    sx={{
+                      fontFamily: 'Oswald',
+                      fontWeight: 600,
+                      fontSize: '16px',
+                      mb: 0.5,
+                    }}
+                  >
+                    {item.name}
+                  </Typography>
+                  {item.selectedSize && (
+                    <Typography
+                      variant="caption"
+                      sx={{ color: '#666', display: 'block', mb: 0.5 }}
+                    >
+                      Size: {item.selectedSize}
+                    </Typography>
+                  )}
+                  <Typography
+                    sx={{
+                      fontFamily: 'Oswald',
+                      fontWeight: 700,
+                      color: '#8C5A3C',
+                      fontSize: '16px',
+                    }}
+                  >
+                    {item.price} TND
+                  </Typography>
+                </Box>
+
+                {/* Quantity Controls */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <QuantityButton
+                    size="small"
+                    onClick={() => updateQuantity(item._id, item.quantity - 1, item.selectedSize)}
+                  >
+                    <Remove sx={{ fontSize: 14 }} />
+                  </QuantityButton>
+                  <Typography sx={{ minWidth: 32, textAlign: 'center', fontWeight: 600 }}>
+                    {item.quantity}
+                  </Typography>
+                  <QuantityButton
+                    size="small"
+                    onClick={() => updateQuantity(item._id, item.quantity + 1, item.selectedSize)}
+                  >
+                    <Add sx={{ fontSize: 14 }} />
+                  </QuantityButton>
+                </Box>
+
+                {/* Delete Button */}
+                <IconButton
+                  onClick={() => removeFromCart(item._id, item.selectedSize)}
+                  sx={{ color: '#999', '&:hover': { color: '#EF4444' } }}
+                >
+                  <Delete sx={{ fontSize: 18 }} />
+                </IconButton>
+              </CartItem>
+            ))
+          )}
+        </Box>
+
+        {/* Footer */}
+        {cart.length > 0 && (
+          <Box sx={{ p: 2, borderTop: '1px solid #E0E0E0', backgroundColor: '#FAFAFA' }}>
+            <Stack spacing={1.5}>
+              <Stack direction="row" justifyContent="space-between">
+                <Typography variant="body2" sx={{ color: '#666' }}>
+                  Subtotal
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {subtotal.toFixed(2)} TND
+                </Typography>
+              </Stack>
+              <Stack direction="row" justifyContent="space-between">
+                <Typography variant="body2" sx={{ color: '#666' }}>
+                  Shipping
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {shippingCost.toFixed(2)} TND
+                </Typography>
+              </Stack>
+              <Divider />
+              <Stack direction="row" justifyContent="space-between">
+                <Typography variant="h6" sx={{ fontFamily: 'Oswald', fontWeight: 700 }}>
+                  Total
+                </Typography>
+                <Typography variant="h6" sx={{ fontFamily: 'Oswald', fontWeight: 700, color: '#8C5A3C' }}>
+                  {total.toFixed(2)} TND
+                </Typography>
+              </Stack>
+              <Button
+                fullWidth
+                variant="contained"
+                onClick={() => {
+                  setIsCartOpen(false);
+                  navigate('/checkout');
+                }}
+                sx={{
+                  backgroundColor: '#8C5A3C',
+                  borderRadius: '40px',
+                  py: 1.5,
+                  mt: 1,
+                  fontFamily: 'Oswald',
+                  fontWeight: 600,
+                  '&:hover': { backgroundColor: '#5C3520' },
+                }}
+              >
+                Proceed to Checkout
+              </Button>
+              <Button
+                fullWidth
+                variant="outlined"
+                onClick={() => setIsCartOpen(false)}
+                sx={{
+                  borderColor: '#8C5A3C',
+                  color: '#8C5A3C',
+                  borderRadius: '40px',
+                  py: 1,
+                  fontFamily: 'Oswald',
+                  '&:hover': { borderColor: '#5C3520', backgroundColor: alpha('#8C5A3C', 0.05) },
+                }}
+              >
+                Continue Shopping
+              </Button>
+            </Stack>
+          </Box>
+        )}
+      </Box>
+    </CartDrawer>
   );
 
   return (
@@ -448,7 +697,7 @@ const Navbar = () => {
         <Container maxWidth={false} sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
           <Toolbar sx={{ justifyContent: 'space-between', py: 1, minHeight: { xs: '60px', sm: '70px' } }}>
             
-            {/* Left Section - Mobile Menu or Desktop Navigation */}
+            {/* Left Section */}
             {isMobile || isTablet ? (
               <IconButtonStyled isSticky={isSticky ? 1 : 0} onClick={() => setMobileMenuOpen(true)}>
                 <MenuIcon />
@@ -468,7 +717,7 @@ const Navbar = () => {
               </Box>
             )}
 
-            {/* Center Logo - Click to go home */}
+            {/* Center Logo */}
             <Box 
               sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer' }}
               onClick={() => navigate('/')}
@@ -491,32 +740,31 @@ const Navbar = () => {
 
             {/* Right Icons */}
             <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-              {/* Language Switcher */}
               <LanguageSwitcher isSticky={isSticky} isMobile={false} />
               
-              {/* Search Icon - Hide on mobile since it's in drawer */}
               {!isMobile && !isTablet && (
                 <IconButtonStyled isSticky={isSticky ? 1 : 0} onClick={handleSearchOpen}>
                   <SearchIcon />
                 </IconButtonStyled>
               )}
               
-              {/* Login Icon - Hide on mobile since it's in drawer */}
               {!isMobile && !isTablet && (
                 <IconButtonStyled isSticky={isSticky ? 1 : 0} onClick={handleLogin}>
                   <PersonIcon />
                 </IconButtonStyled>
               )}
               
-              {/* Cart Icon - Always visible */}
-              <IconButtonStyled isSticky={isSticky ? 1 : 0} onClick={handleCart}>
-                <ShoppingCartIcon />
+              {/* Cart Icon with Badge */}
+              <IconButtonStyled isSticky={isSticky ? 1 : 0} onClick={handleCartOpen}>
+                <Badge badgeContent={cartCount} color="error" sx={{ '& .MuiBadge-badge': { backgroundColor: '#EF4444' } }}>
+                  <ShoppingCartIcon />
+                </Badge>
               </IconButtonStyled>
             </Box>
           </Toolbar>
         </Container>
 
-        {/* Full-width Search Overlay */}
+        {/* Search Overlay */}
         <AnimatePresence>
           {showSearch && (
             <Fade in={showSearch} timeout={300}>
@@ -560,6 +808,9 @@ const Navbar = () => {
       >
         {menuItems}
       </MobileDrawer>
+
+      {/* Cart Drawer */}
+      <CartDrawerComponent />
 
       {/* Spacer for fixed navbar */}
       {isSticky && <Box sx={{ height: { xs: '60px', sm: '70px' } }} />}

@@ -4,9 +4,12 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App.jsx';
 import './i18n'; // Import i18n configuration
 import '@fontsource/oswald'; // Import Oswald font if not already imported
+import { CartProvider } from './context/CartContext';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    <CartProvider>
+      <App />
+    </CartProvider>
   </StrictMode>
 );

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { protect, admin } = require('../middleware/auth');
+const { protect, superAdminOnly, adminOrSuperAdmin } = require('../middleware/auth');
+const { checkBlockedApis } = require('../middleware/apiBlocker');
 const {
   submitContactForm,
   getMessages,
@@ -9,13 +10,26 @@ const {
   getStats
 } = require('../controllers/contactController');
 
-// Public routes
+// Public routes (no authentication)
 router.post('/', submitContactForm);
 
-// Admin routes
-router.get('/', protect, admin, getMessages);
-router.get('/stats', protect, admin, getStats);
-router.put('/:id/status', protect, admin, updateMessageStatus);
-router.delete('/:id', protect, admin, deleteMessage);
+// Admin & Super Admin routes (can view but not modify)
+router.get('/', protect, adminOrSuperAdmin, getMessages);
+router.get('/stats', protect, adminOrSuperAdmin, getStats);
+
+// Super Admin only routes (can modify/delete)
+router.put('/:id/status', 
+  protect, 
+  superAdminOnly, 
+  checkBlockedApis('/api/contact/:id/status', 'PUT'),
+  updateMessageStatus
+);
+
+router.delete('/:id', 
+  protect, 
+  superAdminOnly, 
+  checkBlockedApis('/api/contact/:id', 'DELETE'),
+  deleteMessage
+);
 
 module.exports = router;
