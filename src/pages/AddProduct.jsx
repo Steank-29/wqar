@@ -112,8 +112,8 @@ const DropzoneContainer = styled(Box)(({ theme, isDragActive }) => ({
 const getImageUrl = (imagePath) => {
   if (!imagePath) return '/placeholder-image.jpg';
   if (imagePath.startsWith('http')) return imagePath;
-  if (imagePath.startsWith('uploads/')) return `http://localhost:5000/${imagePath}`;
-  return `http://localhost:5000/${imagePath}`;
+  if (imagePath.startsWith('uploads/')) return `https://wqar-api.onrender.com/${imagePath}`;
+  return `https://wqar-api.onrender.com/${imagePath}`;
 };
 
 const AddProduct = () => {

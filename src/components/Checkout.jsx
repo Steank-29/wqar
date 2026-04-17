@@ -41,6 +41,9 @@ import { useCart } from '../context/CartContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import '@fontsource/oswald';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+
 const COLORS = {
   primary: '#1A1A1A',
   secondary: '#8C5A3C',
@@ -160,7 +163,7 @@ const Checkout = () => {
       };
       
       // Make API call to backend
-      const response = await fetch('http://localhost:5000/api/orders', {
+      const response = await fetch(`${API_URL}/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -793,7 +796,7 @@ const Checkout = () => {
                           <Box sx={{ display: 'flex', gap: 2 }}>
                             <Box sx={{ position: 'relative' }}>
                               <Avatar
-                                src={item.mainImage ? `http://localhost:5000/${item.mainImage}` : null}
+                                src={item.mainImage ? `https://wqar-api.onrender.com/${item.mainImage}` : null}
                                 variant="rounded"
                                 sx={{ 
                                   width: 70, 
