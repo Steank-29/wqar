@@ -177,7 +177,7 @@ const Login = () => {
     
     try {
       // Call your backend login endpoint
-      const response = await fetch(`${import.meta.env.VITE_API_BASE}/users/login`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE}/api/users/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
