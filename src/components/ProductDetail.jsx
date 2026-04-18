@@ -62,7 +62,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../components/LanguageContext';
 import { useTranslation } from 'react-i18next';
-import { getProductById, createOrder } from '../services/productService';
+import { getProductById } from '../services/productService';
 
 const COLORS = {
   primary: '#8C5A3C',
@@ -89,7 +89,7 @@ const COLORS = {
 const getFullImageUrl = (imagePath) => {
   if (!imagePath) return null;
   if (imagePath.startsWith('http')) return imagePath;
-  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const baseUrl = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
   const cleanBaseUrl = baseUrl.replace(/\/api$/, '');
   const cleanPath = imagePath.replace(/^\/+/, '');
   return `${cleanBaseUrl}/${cleanPath}`;
@@ -113,6 +113,7 @@ const ProductDetail = () => {
   const [orderStep, setOrderStep] = useState(0);
   const [orderSubmitting, setOrderSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
+  const [orderNumber, setOrderNumber] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [imageLoaded, setImageLoaded] = useState(false);
   
@@ -191,21 +192,55 @@ const ProductDetail = () => {
     setOrderSubmitting(true);
     try {
       const currentPrice = product.discountedPrice || product.price;
+      const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+      
+      // Format order data to match your backend API structure
       const orderData = {
-        productId: product._id,
-        productName: product.name,
-        size: selectedSize,
-        quantity: quantity,
-        price: currentPrice,
+        items: [{
+          productId: product._id,
+          variantKey: `${product._id}_${selectedSize}`,
+          name: product.name,
+          price: currentPrice,
+          originalPrice: product.price,
+          quantity: quantity,
+          selectedSize: selectedSize,
+          mainImage: product.images?.[0]?.url || null
+        }],
+        customer: {
+          fullName: orderForm.fullName,
+          email: orderForm.email,
+          phone: orderForm.phone,
+          address: orderForm.address,
+          city: orderForm.city,
+          postalCode: orderForm.postalCode
+        },
+        subtotal: currentPrice * quantity,
+        shippingCost: 0, // Calculate based on your logic
         total: currentPrice * quantity,
-        customer: orderForm,
-        orderDate: new Date(),
-        status: 'pending'
+        paymentMethod: orderForm.paymentMethod,
+        notes: orderForm.notes
       };
       
-      await createOrder(orderData);
+      // Make API call to your backend
+      const response = await fetch(`${API_BASE}/api/orders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(orderData)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to place order');
+      }
+      
+      setOrderNumber(data.order?.orderNumber || data.order?.id);
       setOrderSuccess(true);
       
+      // Reset form after 3 seconds and close dialog
       setTimeout(() => {
         setOrderDialogOpen(false);
         setOrderStep(0);
@@ -214,10 +249,22 @@ const ProductDetail = () => {
           fullName: '', email: '', phone: '', address: '', city: '', postalCode: '', paymentMethod: 'cash_on_delivery', notes: ''
         });
         setQuantity(1);
+        
+        // Navigate to order tracking or show success message
+        setSnackbar({ 
+          open: true, 
+          message: `Order placed successfully! Order #${data.order?.orderNumber || 'N/A'}`, 
+          severity: 'success' 
+        });
       }, 3000);
+      
     } catch (error) {
       console.error('Error submitting order:', error);
-      setSnackbar({ open: true, message: 'Error placing order. Please try again.', severity: 'error' });
+      setSnackbar({ 
+        open: true, 
+        message: error.message || 'Error placing order. Please try again.', 
+        severity: 'error' 
+      });
     } finally {
       setOrderSubmitting(false);
     }
@@ -831,10 +878,10 @@ const ProductDetail = () => {
                 Order Placed Successfully!
               </Typography>
               <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
-                Thank you for your purchase.
+                Order #{orderNumber}
               </Typography>
               <Typography variant="body2" color="textSecondary">
-                We will contact you within 24 hours to confirm your order.
+                Thank you for your purchase. We will contact you within 24 hours to confirm your order.
               </Typography>
             </Box>
           )}
