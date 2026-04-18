@@ -144,125 +144,157 @@ const Login = () => {
   };
 
   // Form validation with translations
-  const validateForm = () => {
-    const newErrors = {};
-    
-    // Email validation
-    if (!formData.email.trim()) {
-      newErrors.email = t('login.errors.emailRequired');
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = t('login.errors.emailInvalid');
-    }
-    
-    // Password validation
-    if (!formData.password) {
-      newErrors.password = t('login.errors.passwordRequired');
-    } else if (formData.password.length < 6) {
-      newErrors.password = t('login.errors.passwordMinLength');
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+ const validateForm = () => {
+  const newErrors = {};
+  
+  // Email validation
+  if (!formData.email || !formData.email.trim()) {
+    newErrors.email = t('login.errors.emailRequired');
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    newErrors.email = t('login.errors.emailInvalid');
+  }
+  
+  // Password validation
+  if (!formData.password) {
+    newErrors.password = t('login.errors.passwordRequired');
+  } else if (formData.password.length < 6) {
+    newErrors.password = t('login.errors.passwordMinLength');
+  }
+  
+  setErrors(newErrors);
+  return Object.keys(newErrors).length === 0;
+};
 
   // Handle login submission - Updated for backend integration
-  const handleLogin = async (e) => {
-    e.preventDefault();
+const handleLogin = async (e) => {
+  e.preventDefault();
+  
+  if (!validateForm()) {
+    return;
+  }
+  
+  setLoading(true);
+  
+  try {
+    // Get API base URL with fallback
+    const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api';
     
-    if (!validateForm()) {
-      return;
+    console.log('Attempting login to:', `${API_BASE}/api/users/login`);
+    console.log('With email:', formData.email);
+    
+    // Call your backend login endpoint
+    const response = await fetch(`${API_BASE}/api/users/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        email: formData.email.trim(),
+        password: formData.password,
+      }),
+    });
+    
+    console.log('Response status:', response.status);
+    
+    // Check if response is JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      console.error('Non-JSON response:', text.substring(0, 200));
+      throw new Error('Server error. Please try again later.');
     }
     
-    setLoading(true);
+    const data = await response.json();
+    console.log('Response data:', data);
     
-    try {
-      // Call your backend login endpoint
-      const response = await fetch(`${import.meta.env.VITE_API_BASE}/api/users/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
-        credentials: 'include', // Include cookies if needed
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        // Handle specific error cases
-        if (response.status === 401) {
-          throw new Error(t('login.errors.invalidCredentials'));
-        } else if (response.status === 500) {
-          throw new Error(t('login.errors.serverError'));
-        } else {
-          throw new Error(data.message || t('login.errors.loginFailed'));
-        }
-      }
-      
-      // Store user data and token based on remember me option
-      const userData = {
-        id: data._id,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-        role: data.role,
-        profilePicture: data.profilePicture,
-        token: data.token
-      };
-      
-      if (formData.rememberMe) {
-        localStorage.setItem('authToken', data.token);
-        localStorage.setItem('user', JSON.stringify(userData));
-        // Optionally store token expiry
-        const expiry = new Date();
-        expiry.setDate(expiry.getDate() + 30); // 30 days
-        localStorage.setItem('tokenExpiry', expiry.toISOString());
+    if (!response.ok) {
+      // Handle specific error cases with proper messages
+      if (response.status === 401) {
+        throw new Error(data.message || t('login.errors.invalidCredentials'));
+      } else if (response.status === 404) {
+        throw new Error('Login service not found. Please contact support.');
+      } else if (response.status === 500) {
+        throw new Error(t('login.errors.serverError'));
       } else {
-        sessionStorage.setItem('authToken', data.token);
-        sessionStorage.setItem('user', JSON.stringify(userData));
+        throw new Error(data.message || t('login.errors.loginFailed'));
       }
-      
-      // Set default authorization header for future requests
-      axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
-      
-      // Show success message
-      setSnackbar({
-        open: true,
-        message: `${t('login.success')} ${t('login.welcomeBack')} ${data.firstName}!`,
-        severity: 'success',
-      });
-      
-      // Redirect after successful login
-      setTimeout(() => {
-        if (data.role === 'admin') {
-          navigate('/dashboard');
-        } else {
-          navigate('/dashboard');
-        }
-      }, 1500);
-      
-    } catch (error) {
-      console.error('Login error:', error);
-      
-      // Handle different error scenarios
-      let errorMessage = error.message || t('login.errors.invalidCredentials');
-      
-      setSnackbar({
-        open: true,
-        message: errorMessage,
-        severity: 'error',
-      });
-      
-      // Clear password field on error for security
-      setFormData((prev) => ({ ...prev, password: '' }));
-    } finally {
-      setLoading(false);
     }
-  };
+    
+    // Validate response data
+    if (!data.token) {
+      throw new Error('Invalid response from server: missing token');
+    }
+    
+    // Store user data and token based on remember me option
+    const userData = {
+      id: data._id || data.id,
+      firstName: data.firstName || data.firstname || '',
+      lastName: data.lastName || data.lastname || '',
+      email: data.email,
+      role: data.role || 'user',
+      profilePicture: data.profilePicture || data.avatar || null,
+      token: data.token
+    };
+    
+    // Store auth data
+    if (formData.rememberMe) {
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('user', JSON.stringify(userData));
+      // Set token expiry (30 days)
+      const expiry = new Date();
+      expiry.setDate(expiry.getDate() + 30);
+      localStorage.setItem('tokenExpiry', expiry.toISOString());
+    } else {
+      sessionStorage.setItem('authToken', data.token);
+      sessionStorage.setItem('user', JSON.stringify(userData));
+    }
+    
+    // Set default authorization header for future axios requests
+    axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+    
+    // Show success message
+    setSnackbar({
+      open: true,
+      message: `${t('login.success') || 'Success!'} ${t('login.welcomeBack') || 'Welcome back'} ${userData.firstName}!`,
+      severity: 'success',
+    });
+    
+    // Redirect after successful login
+    setTimeout(() => {
+      if (userData.role === 'admin') {
+        navigate('/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
+    }, 1500);
+    
+  } catch (error) {
+    console.error('Login error details:', error);
+    
+    // Handle network errors
+    let errorMessage = error.message;
+    
+    if (error.message === 'Failed to fetch') {
+      errorMessage = 'Cannot connect to server. Please check if the server is running.';
+    } else if (error.message.includes('NetworkError')) {
+      errorMessage = 'Network error. Please check your internet connection.';
+    } else if (!errorMessage) {
+      errorMessage = t('login.errors.invalidCredentials');
+    }
+    
+    setSnackbar({
+      open: true,
+      message: errorMessage,
+      severity: 'error',
+    });
+    
+    // Clear password field on error for security
+    setFormData(prev => ({ ...prev, password: '' }));
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Handle forgot password
   const handleForgotPassword = () => {
