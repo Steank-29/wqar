@@ -179,7 +179,7 @@ const handleLogin = async (e) => {
     // Get API base URL with fallback
     const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api';
     
-    console.log('Attempting login to:', `${API_BASE}/api/users/login`);
+    console.log('Attempting login to:', `${API_BASE}/users/login`);
     console.log('With email:', formData.email);
     
     // Call your backend login endpoint
