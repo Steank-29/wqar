@@ -53,7 +53,6 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 import axios from 'axios';
 import '@fontsource/oswald';
