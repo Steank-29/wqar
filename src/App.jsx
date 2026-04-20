@@ -21,6 +21,7 @@ import Settings from './pages/Settings';
 import Products from './components/Products'
 import Order from './pages/Order';
 import Facture from './pages/Facture';
+import Register from './components/Register';
 import './i18n'; // Import i18n configuration
 import './App.css';
 import AdminLayout from './admin/AdminLayout';
@@ -93,6 +94,12 @@ const AppContent = () => {
               <Route path="/login" element={
                 <Layout>
                   <Login />
+                </Layout>
+              } />
+
+              <Route path="/registernewadminaccountforwiqar" element={
+                <Layout>
+                  <Register />
                 </Layout>
               } />
               

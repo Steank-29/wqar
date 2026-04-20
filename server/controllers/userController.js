@@ -127,65 +127,46 @@ const loginUser = async (req, res) => {
 // @desc    Register a new user (normal admin registration)
 // @route   POST /api/users/register
 // @access  Public
+// In userController.js - modify registerUser function
 const registerUser = async (req, res) => {
   try {
     const { 
-      firstName, 
-      lastName, 
-      email, 
-      password, 
-      dateOfBirth, 
-      gender, 
-      phoneNumber 
+      firstName, lastName, email, password, dateOfBirth, gender, phoneNumber,
+      isFirstUser  // Add this flag
     } = req.body;
 
     const userExists = await User.findOne({ email });
-
     if (userExists) {
-      if (req.file) {
-        fs.unlinkSync(req.file.path);
-      }
+      if (req.file) fs.unlinkSync(req.file.path);
       return res.status(400).json({ message: 'User already exists' });
     }
 
+    // Check if this is the first user in the system
+    const userCount = await User.countDocuments();
+    const isFirstUserInSystem = userCount === 0 || isFirstUser === 'true';
+
     let profilePicture = 'default-avatar.jpg';
-    if (req.file) {
-      profilePicture = req.file.path;
-    }
+    if (req.file) profilePicture = req.file.path;
 
     const user = await User.create({
-      firstName,
-      lastName,
-      email,
-      password,
-      dateOfBirth,
-      gender,
-      phoneNumber,
-      role: 'admin', // Default role for public registration
+      firstName, lastName, email, password, dateOfBirth, gender, phoneNumber,
+      role: isFirstUserInSystem ? 'super-admin' : 'admin', // First user becomes super-admin
       profilePicture
     });
 
     if (user) {
       res.status(201).json({
-        _id: user._id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        role: user.role,
-        profilePicture: user.profilePicture,
-        phoneNumber: user.phoneNumber,
-        token: user.getSignedJwtToken()
+        _id: user._id, firstName, lastName, email,
+        role: user.role, profilePicture: user.profilePicture, phoneNumber,
+        token: user.getSignedJwtToken(),
+        message: isFirstUserInSystem ? 'Super Admin created successfully' : 'Admin created successfully'
       });
     } else {
-      if (req.file) {
-        fs.unlinkSync(req.file.path);
-      }
+      if (req.file) fs.unlinkSync(req.file.path);
       res.status(400).json({ message: 'Invalid user data' });
     }
   } catch (error) {
-    if (req.file) {
-      fs.unlinkSync(req.file.path);
-    }
+    if (req.file) fs.unlinkSync(req.file.path);
     res.status(500).json({ message: error.message });
   }
 };
