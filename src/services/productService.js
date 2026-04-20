@@ -32,7 +32,7 @@ export const getProducts = async (filters = {}) => {
     if (filters.maxPrice) params.append('maxPrice', filters.maxPrice);
     if (filters.category) params.append('category', filters.category);
     
-    const response = await axiosInstance.get(`/api/products?${params.toString()}`);
+    const response = await axiosInstance.get(`/products?${params.toString()}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching products:', error);
@@ -43,7 +43,7 @@ export const getProducts = async (filters = {}) => {
 // Get single product by ID
 export const getProductById = async (id) => {
   try {
-    const response = await axiosInstance.get(`/api/products/${id}`);
+    const response = await axiosInstance.get(`/products/${id}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching product:', error);
@@ -54,7 +54,7 @@ export const getProductById = async (id) => {
 // Create order (for buying)
 export const createOrder = async (orderData) => {
   try {
-    const response = await axiosInstance.post('/api/orders', orderData);
+    const response = await axiosInstance.post('/orders', orderData);
     return response.data;
   } catch (error) {
     console.error('Error creating order:', error);
@@ -65,7 +65,7 @@ export const createOrder = async (orderData) => {
 // Get product statistics
 export const getProductStats = async () => {
   try {
-    const response = await axiosInstance.get('/api/products/stats/summary');
+    const response = await axiosInstance.get('/products/stats/summary');
     return response.data;
   } catch (error) {
     console.error('Error fetching stats:', error);
