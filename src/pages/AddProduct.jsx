@@ -26,7 +26,7 @@ import * as XLSX from 'xlsx';
 import axios from 'axios';
 
 // API Configuration
-const API_URL = import.meta.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // Get token from localStorage
 const getAuthToken = () => {

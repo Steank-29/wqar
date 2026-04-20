@@ -26,7 +26,7 @@ import '@fontsource/oswald';
 import logo from '../assets/LogoW.png';
 
 // API Configuration
-const API_URL = import.meta.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const getAuthToken = () => {
   return localStorage.getItem('authToken') || localStorage.getItem('token') || sessionStorage.getItem('authToken');
@@ -75,7 +75,7 @@ const getFullImageUrl = (imagePath) => {
     return '/default-avatar.jpg';
   }
   
-  const baseUrl = import.meta.env.REACT_APP_API_URL || 'http://localhost:5000';
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
   const cleanPath = imagePath.replace(/^\/+/, '');
   return `${baseUrl}/${cleanPath}`;
 };

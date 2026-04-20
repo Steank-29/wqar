@@ -89,7 +89,7 @@ const COLORS = {
 const getFullImageUrl = (imagePath) => {
   if (!imagePath) return null;
   if (imagePath.startsWith('http')) return imagePath;
-  const baseUrl = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
   const cleanBaseUrl = baseUrl.replace(/\/api$/, '');
   const cleanPath = imagePath.replace(/^\/+/, '');
   return `${cleanBaseUrl}/${cleanPath}`;
@@ -192,7 +192,7 @@ const ProductDetail = () => {
     setOrderSubmitting(true);
     try {
       const currentPrice = product.discountedPrice || product.price;
-      const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       
       // Format order data to match your backend API structure
       const orderData = {

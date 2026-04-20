@@ -58,7 +58,7 @@ import axios from 'axios';
 import '@fontsource/oswald';
 
 // API Configuration
-const API_URL = import.meta.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const getAuthToken = () => {
   return localStorage.getItem('authToken') || localStorage.getItem('token') || sessionStorage.getItem('authToken');
