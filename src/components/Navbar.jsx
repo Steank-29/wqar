@@ -733,9 +733,10 @@ const Navbar = () => {
                   color: isSticky ? '#FFFFFF' : '#8C5A3C',
                   textTransform: 'uppercase',
                   fontSize: { xs: '18px', sm: '20px', md: '24px' },
+                  textTransform: 'uppercase',
                 }}
               >
-                Wiqar
+                {t('navbar.wqar')}
               </Typography>
             </Box>
 
