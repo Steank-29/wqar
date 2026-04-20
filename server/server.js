@@ -24,7 +24,7 @@ app.use(express.urlencoded({ extended: true }));
 // ✅ FIXED CORS CONFIGURATION
 const allowedOrigins = [
   'http://localhost:8080',      // Your existing localhost
-  'https://wqar-3k5u.vercel.app/', // Your frontend (removed trailing slash)
+  'https://wqar-3k5u.vercel.app', // Your frontend (removed trailing slash)
   /\.vercel\.app$/  
 ];
 
