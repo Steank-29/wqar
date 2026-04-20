@@ -93,7 +93,7 @@ const getFullImageUrl = (imagePath) => {
   }
   
   // Get base URL from environment (without /api)
-  const baseUrl = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api';
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
   // Remove /api from the end if present
   const cleanBaseUrl = baseUrl.replace(/\/api$/, '');
   // Remove leading slashes from image path
