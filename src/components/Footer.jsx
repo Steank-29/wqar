@@ -236,9 +236,10 @@ const Footer = () => {
                         letterSpacing: '3px',
                         color: '#FFFFFF',
                         fontSize: { xs: '28px', sm: '32px', md: '36px' },
+                        textTransform: 'uppercase',
                       }}
                     >
-                      WQAR
+                      {t('navbar.wqar')}
                     </Typography>
                   </Box>
                   <Typography

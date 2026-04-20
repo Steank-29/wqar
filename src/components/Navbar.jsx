@@ -319,9 +319,10 @@ const Navbar = () => {
               fontWeight: 600,
               letterSpacing: '2px',
               color: '#FFFFFF',
+              textTransform: 'uppercase',
             }}
           >
-            WIQAR
+            {t('navbar.wqar')}
           </Typography>
         </Box>
         <IconButton onClick={() => setMobileMenuOpen(false)} sx={{ color: '#FFFFFF' }}>
