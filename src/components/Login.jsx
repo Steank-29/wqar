@@ -183,7 +183,7 @@ const handleLogin = async (e) => {
     console.log('With email:', formData.email);
     
     // Call your backend login endpoint
-    const response = await fetch(`${API_BASE}/api/users/login`, {
+    const response = await fetch(`https://wqar-api.onrender.com/api/users/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
