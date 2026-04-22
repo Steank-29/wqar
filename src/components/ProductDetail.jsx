@@ -192,7 +192,7 @@ const ProductDetail = () => {
     setOrderSubmitting(true);
     try {
       const currentPrice = product.discountedPrice || product.price;
-      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
       
       // Format order data to match your backend API structure
       const orderData = {
@@ -222,7 +222,7 @@ const ProductDetail = () => {
       };
       
       // Make API call to your backend
-      const response = await fetch(`${API_BASE}/api/orders`, {
+      const response = await fetch(`${API_BASE}/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
