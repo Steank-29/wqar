@@ -1,0 +1,11 @@
+@"
+# Environment variables
+.env
+*.env
+
+# Uploads
+uploads/
+
+# Logs
+*.log
+"@ | Out-File -FilePath .gitignore -Encoding UTF8
