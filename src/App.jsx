@@ -26,6 +26,7 @@ import './i18n'; // Import i18n configuration
 import './App.css';
 import AdminLayout from './admin/AdminLayout';
 import Checkout from './components/Checkout';
+import Forgot from './components/Forgot';
 
 // Create emotion cache based on direction
 const createEmotionCache = (direction) => {
@@ -84,6 +85,12 @@ const AppContent = () => {
               <Route path="/checkout" element={
                 <Layout>
                   <Checkout />
+                </Layout>
+              } />
+
+              <Route path="/forgot-password" element={
+                <Layout>
+                  <Forgot />
                 </Layout>
               } />
               <Route path="/product/:id" element={
