@@ -116,6 +116,48 @@ const getProductImageUrl = (product) => {
   return '/placeholder-image.jpg';
 };
 
+// Helper function to get product price for a specific size
+const getProductPrice = (product, size = '30ml') => {
+  if (!product) return null;
+  
+  // Check prices object
+  if (product.prices && product.prices[size]) {
+    return product.prices[size];
+  }
+  
+  // Check currentPrices (from API response)
+  if (product.currentPrices && product.currentPrices[size]) {
+    return product.currentPrices[size];
+  }
+  
+  // Check getAllPrices method
+  if (product.getAllPrices && typeof product.getAllPrices === 'function') {
+    const prices = product.getAllPrices();
+    if (prices && prices[size]) {
+      return prices[size];
+    }
+  }
+  
+  return null;
+};
+
+// Helper function to get all available sizes with prices
+const getAvailableSizes = (product) => {
+  if (!product) return [];
+  
+  const sizes = product.quantity || [];
+  const availableSizes = [];
+  
+  for (const size of sizes) {
+    const price = getProductPrice(product, size);
+    if (price !== null && price !== undefined) {
+      availableSizes.push(size);
+    }
+  }
+  
+  return availableSizes;
+};
+
 const Home = () => {
   const navigate = useNavigate();
   const theme = useTheme();
@@ -801,10 +843,38 @@ const Home = () => {
   );
 };
 
-/* ── PRODUCT CARD COMPONENT ── */
+/* ── PRODUCT CARD COMPONENT (UPDATED) ── */
 const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive, t, isRTL, currentLanguage, isMobile }) => {
   const [hovered, setHovered] = useState(false);
   const [selectedSize, setSelectedSize] = useState(null);
+  const [currentPrice, setCurrentPrice] = useState(null);
+  const [availableSizes, setAvailableSizes] = useState([]);
+
+  // Get available sizes and current price when product or selected size changes
+  useEffect(() => {
+    if (product) {
+      // Get available sizes with prices
+      const sizes = getAvailableSizes(product);
+      setAvailableSizes(sizes);
+      
+      // Set default selected size (first available size or '30ml')
+      if (sizes.length > 0) {
+        if (!selectedSize || !sizes.includes(selectedSize)) {
+          setSelectedSize(sizes[0]);
+        }
+      } else {
+        setSelectedSize('30ml');
+      }
+    }
+  }, [product]);
+
+  // Update price when selected size changes
+  useEffect(() => {
+    if (product && selectedSize) {
+      const price = getProductPrice(product, selectedSize);
+      setCurrentPrice(price);
+    }
+  }, [product, selectedSize]);
 
   // Get badge color based on product tags
   const getBadgeColor = () => {
@@ -816,11 +886,15 @@ const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive, t, is
   };
   
   const badge = getBadgeColor();
-  const discount = product.discountPercentage || 0;
-  const currentPrice = product.currentPrice || product.price;
-  const hasDiscount = discount > 0;
   
-  // Get image URL - using the helper function
+  // Calculate discount percentage from discountedPrice
+  const discount = product.discountedPrice && currentPrice 
+    ? Math.round(((currentPrice - product.discountedPrice) / currentPrice) * 100)
+    : 0;
+  const hasDiscount = discount > 0 && product.discountedPrice;
+  const finalPrice = hasDiscount ? product.discountedPrice : currentPrice;
+  
+  // Get image URL
   const imageUrl = getProductImageUrl(product);
 
   // Get translated badge text
@@ -858,6 +932,11 @@ const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive, t, is
     e.stopPropagation();
     setSelectedSize(size);
   };
+
+  // Don't render if no price is available
+  if (!currentPrice && !product.discountedPrice) {
+    return null;
+  }
 
   return (
     <motion.div
@@ -1132,17 +1211,7 @@ const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive, t, is
                 '& .MuiRating-icon': { fontSize: { xs: '14px', md: '18px' } },
               }}
             />
-            {!isMobile && (
-              <Typography
-                sx={{
-                  fontFamily: 'Oswald, sans-serif',
-                  fontSize: '11px',
-                  color: alpha('#1A1A1A', 0.6),
-                }}
-              >
-                ({product.reviewCount || 0} reviews)
-              </Typography>
-            )}
+           
           </Stack>
 
           {!isMobile && <Divider sx={{ borderColor: alpha('#6B4423', 0.1) }} />}
@@ -1161,7 +1230,7 @@ const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive, t, is
                     lineHeight: 1,
                   }}
                 >
-                  {currentPrice} TND
+                  {finalPrice || currentPrice} TND
                 </Typography>
                 {hasDiscount && !isMobile && (
                   <Typography
@@ -1173,7 +1242,7 @@ const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive, t, is
                       textDecoration: 'line-through',
                     }}
                   >
-                    {product.price} TND
+                    {currentPrice} TND
                   </Typography>
                 )}
               </Stack>
@@ -1227,10 +1296,10 @@ const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive, t, is
             </Tooltip>
           </Stack>
 
-          {/* Size Selector - simplified on mobile */}
-          {product.quantity && product.quantity.length > 0 && !isMobile && (
+          {/* Size Selector - show only sizes that have prices */}
+          {availableSizes.length > 0 && !isMobile && (
             <Stack direction="row" spacing={1.5} mt={1} useFlexGap>
-              {product.quantity.slice(0, 2).map((size) => (
+              {availableSizes.slice(0, 3).map((size) => (
                 <motion.div
                   key={size}
                   whileHover={{ scale: 1.08 }}

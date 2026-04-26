@@ -29,12 +29,10 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Avatar,
   useMediaQuery,
   useTheme,
   Breadcrumbs,
   Link,
-  Fade,
 } from '@mui/material';
 import {
   ShoppingBag,
@@ -42,7 +40,6 @@ import {
   FavoriteBorder,
   LocalShipping,
   Verified,
-  WhatsApp,
   ArrowBack,
   CheckCircle,
   Close,
@@ -51,15 +48,13 @@ import {
   Refresh,
   Add,
   Remove,
-  Star,
-  StarBorder,
   Inventory,
   Timeline,
   Shield,
   CreditCard,
   LocalOffer,
 } from '@mui/icons-material';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useLanguage } from '../components/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { getProductById } from '../services/productService';
@@ -95,6 +90,41 @@ const getFullImageUrl = (imagePath) => {
   return `${cleanBaseUrl}/${cleanPath}`;
 };
 
+// Helper function to get product price for a specific size
+const getProductPrice = (product, size) => {
+  if (!product) return null;
+  
+  // Check prices object (new structure)
+  if (product.prices && product.prices[size]) {
+    return product.prices[size];
+  }
+  
+  // Check currentPrices (from API response)
+  if (product.currentPrices && product.currentPrices[size]) {
+    return product.currentPrices[size];
+  }
+  
+  // Fallback to legacy price
+  return product.price || null;
+};
+
+// Helper function to get all available sizes with prices
+const getAvailableSizes = (product) => {
+  if (!product) return [];
+  
+  const sizes = product.quantity || [];
+  const availableSizes = [];
+  
+  for (const size of sizes) {
+    const price = getProductPrice(product, size);
+    if (price !== null && price !== undefined) {
+      availableSizes.push(size);
+    }
+  }
+  
+  return availableSizes;
+};
+
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -106,6 +136,8 @@ const ProductDetail = () => {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState('');
+  const [currentPrice, setCurrentPrice] = useState(null);
+  const [availableSizes, setAvailableSizes] = useState([]);
   const [quantity, setQuantity] = useState(1);
   const [wishlisted, setWishlisted] = useState(false);
   const [activeImage, setActiveImage] = useState(0);
@@ -133,13 +165,30 @@ const ProductDetail = () => {
     window.scrollTo(0, 0);
   }, [id]);
 
+  // Update price when selected size changes
+  useEffect(() => {
+    if (product && selectedSize) {
+      const price = getProductPrice(product, selectedSize);
+      setCurrentPrice(price);
+    }
+  }, [product, selectedSize]);
+
   const loadProduct = async () => {
     setLoading(true);
     try {
       const response = await getProductById(id);
-      setProduct(response.data);
-      if (response.data.quantity && response.data.quantity.length > 0) {
-        setSelectedSize(response.data.quantity[0]);
+      const productData = response.data;
+      setProduct(productData);
+      
+      // Get available sizes with prices
+      const sizes = getAvailableSizes(productData);
+      setAvailableSizes(sizes);
+      
+      // Set default selected size (first available size)
+      if (sizes.length > 0) {
+        setSelectedSize(sizes[0]);
+        const price = getProductPrice(productData, sizes[0]);
+        setCurrentPrice(price);
       }
     } catch (error) {
       console.error('Error loading product:', error);
@@ -189,9 +238,13 @@ const ProductDetail = () => {
       return;
     }
 
+    if (!currentPrice) {
+      setSnackbar({ open: true, message: 'Price not available for selected size', severity: 'error' });
+      return;
+    }
+
     setOrderSubmitting(true);
     try {
-      const currentPrice = product.discountedPrice || product.price;
       const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
       
       // Format order data to match your backend API structure
@@ -201,7 +254,7 @@ const ProductDetail = () => {
           variantKey: `${product._id}_${selectedSize}`,
           name: product.name,
           price: currentPrice,
-          originalPrice: product.price,
+          originalPrice: product.prices?.[selectedSize] || currentPrice,
           quantity: quantity,
           selectedSize: selectedSize,
           mainImage: product.images?.[0]?.url || null
@@ -215,13 +268,12 @@ const ProductDetail = () => {
           postalCode: orderForm.postalCode
         },
         subtotal: currentPrice * quantity,
-        shippingCost: 0, // Calculate based on your logic
+        shippingCost: 0,
         total: currentPrice * quantity,
         paymentMethod: orderForm.paymentMethod,
         notes: orderForm.notes
       };
       
-      // Make API call to your backend
       const response = await fetch(`${API_BASE}/orders`, {
         method: 'POST',
         headers: {
@@ -240,7 +292,6 @@ const ProductDetail = () => {
       setOrderNumber(data.order?.orderNumber || data.order?.id);
       setOrderSuccess(true);
       
-      // Reset form after 3 seconds and close dialog
       setTimeout(() => {
         setOrderDialogOpen(false);
         setOrderStep(0);
@@ -250,7 +301,6 @@ const ProductDetail = () => {
         });
         setQuantity(1);
         
-        // Navigate to order tracking or show success message
         setSnackbar({ 
           open: true, 
           message: `Order placed successfully! Order #${data.order?.orderNumber || 'N/A'}`, 
@@ -291,8 +341,11 @@ const ProductDetail = () => {
     );
   }
 
-  const discount = product.discountPercentage || 0;
-  const currentPrice = product.discountedPrice || product.price;
+  // Calculate discount (if discountedPrice is set on product level)
+  const discount = product.discountedPrice && currentPrice 
+    ? Math.round(((currentPrice - product.discountedPrice) / currentPrice) * 100)
+    : 0;
+  const finalPrice = discount > 0 ? product.discountedPrice : currentPrice;
   const isOutOfStock = product.stock === 0;
   const mainImage = product.images?.[activeImage]?.url 
     ? getFullImageUrl(product.images[activeImage].url)
@@ -457,7 +510,7 @@ const ProductDetail = () => {
               />
             </Stack>
 
-            {/* Price */}
+            {/* Price - Updated for multiple sizes */}
             <Box sx={{ mb: 3 }}>
               {discount > 0 ? (
                 <Stack direction="row" alignItems="baseline" spacing={2}>
@@ -470,7 +523,7 @@ const ProductDetail = () => {
                       fontSize: { xs: '36px', md: '48px' },
                     }}
                   >
-                    {currentPrice} TND
+                    {finalPrice} TND
                   </Typography>
                   <Typography 
                     variant="h5" 
@@ -480,7 +533,7 @@ const ProductDetail = () => {
                       fontWeight: 400,
                     }}
                   >
-                    {product.price} TND
+                    {currentPrice} TND
                   </Typography>
                 </Stack>
               ) : (
@@ -494,6 +547,11 @@ const ProductDetail = () => {
                   }}
                 >
                   {currentPrice} TND
+                </Typography>
+              )}
+              {selectedSize && (
+                <Typography variant="caption" sx={{ color: COLORS.gray500, display: 'block', mt: 0.5 }}>
+                  Price for {selectedSize}
                 </Typography>
               )}
             </Box>
@@ -540,8 +598,8 @@ const ProductDetail = () => {
               </Box>
             )}
 
-            {/* Size Selection */}
-            {product.quantity && product.quantity.length > 0 && (
+            {/* Size Selection - Only show sizes that have prices */}
+            {availableSizes.length > 0 && (
               <Box sx={{ mb: 3 }}>
                 <Typography 
                   variant="subtitle1" 
@@ -554,31 +612,44 @@ const ProductDetail = () => {
                   Select Size
                 </Typography>
                 <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
-                  {product.quantity.map((size) => (
-                    <Button
-                      key={size}
-                      variant={selectedSize === size ? 'contained' : 'outlined'}
-                      onClick={() => setSelectedSize(size)}
-                      disabled={isOutOfStock}
-                      sx={{
-                        borderRadius: '40px',
-                        px: 3.5,
-                        py: 1,
-                        minWidth: '80px',
-                        bgcolor: selectedSize === size ? COLORS.primary : 'transparent',
-                        borderColor: selectedSize === size ? COLORS.primary : COLORS.gray300,
-                        color: selectedSize === size ? COLORS.white : COLORS.gray700,
-                        fontFamily: 'Inter',
-                        fontWeight: 600,
-                        '&:hover': {
-                          bgcolor: selectedSize === size ? COLORS.primaryDark : alpha(COLORS.primary, 0.05),
-                          borderColor: COLORS.primary,
-                        },
-                      }}
-                    >
-                      {size}
-                    </Button>
-                  ))}
+                  {availableSizes.map((size) => {
+                    const sizePrice = getProductPrice(product, size);
+                    return (
+                      <Button
+                        key={size}
+                        variant={selectedSize === size ? 'contained' : 'outlined'}
+                        onClick={() => setSelectedSize(size)}
+                        disabled={isOutOfStock}
+                        sx={{
+                          borderRadius: '40px',
+                          px: 3.5,
+                          py: 1,
+                          minWidth: '80px',
+                          bgcolor: selectedSize === size ? COLORS.primary : 'transparent',
+                          borderColor: selectedSize === size ? COLORS.primary : COLORS.gray300,
+                          color: selectedSize === size ? COLORS.white : COLORS.gray700,
+                          fontFamily: 'Inter',
+                          fontWeight: 600,
+                          flexDirection: 'column',
+                          '&:hover': {
+                            bgcolor: selectedSize === size ? COLORS.primaryDark : alpha(COLORS.primary, 0.05),
+                            borderColor: COLORS.primary,
+                          },
+                        }}
+                      >
+                        <span>{size}</span>
+                        <Typography 
+                          variant="caption" 
+                          sx={{ 
+                            fontSize: '10px',
+                            color: selectedSize === size ? alpha(COLORS.white, 0.8) : COLORS.gray500,
+                          }}
+                        >
+                          {sizePrice} TND
+                        </Typography>
+                      </Button>
+                    );
+                  })}
                 </Stack>
               </Box>
             )}
@@ -638,7 +709,7 @@ const ProductDetail = () => {
                 size="large"
                 startIcon={<ShoppingBag />}
                 onClick={() => setOrderDialogOpen(true)}
-                disabled={isOutOfStock}
+                disabled={isOutOfStock || !selectedSize}
                 sx={{
                   bgcolor: COLORS.primary,
                   '&:hover': { bgcolor: COLORS.primaryDark },
@@ -739,7 +810,7 @@ const ProductDetail = () => {
         <DialogContent sx={{ p: 3 }}>
           {!orderSuccess ? (
             <>
-              {/* Order Summary */}
+              {/* Order Summary - Updated to show size-specific price */}
               <Card sx={{ mb: 3, bgcolor: COLORS.gray50, borderRadius: '16px', elevation: 0, border: `1px solid ${COLORS.gray200}` }}>
                 <CardContent sx={{ p: 2.5 }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, fontFamily: 'Oswald' }}>

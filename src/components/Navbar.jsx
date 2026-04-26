@@ -440,7 +440,7 @@ const Navbar = () => {
     </Box>
   );
 
-  // Cart Drawer Component
+  // Cart Drawer Component - Updated to show original and discounted prices
   const CartDrawerComponent = () => (
     <CartDrawer
       anchor={isRTL ? 'left' : 'right'}
@@ -505,77 +505,97 @@ const Navbar = () => {
               </Button>
             </Box>
           ) : (
-            cart.map((item) => (
-              <CartItem key={item.variantKey}>
-                {/* Product Image */}
-                <Avatar
-                  src={getFullImageUrl(item.mainImage)}
-                  variant="rounded"
-                  sx={{ width: 80, height: 80, borderRadius: '12px' }}
-                >
-                  {item.name?.[0]}
-                </Avatar>
-
-                {/* Product Details */}
-                <Box sx={{ flex: 1 }}>
-                  <Typography
-                    sx={{
-                      fontFamily: 'Oswald',
-                      fontWeight: 600,
-                      fontSize: '16px',
-                      mb: 0.5,
-                    }}
+            cart.map((item) => {
+              // Determine if item has discount
+              const hasDiscount = item.originalPrice && item.originalPrice > item.price;
+              const displayPrice = item.price;
+              const originalPrice = item.originalPrice || item.price;
+              
+              return (
+                <CartItem key={item.variantKey}>
+                  {/* Product Image */}
+                  <Avatar
+                    src={getFullImageUrl(item.mainImage)}
+                    variant="rounded"
+                    sx={{ width: 80, height: 80, borderRadius: '12px' }}
                   >
-                    {item.name}
-                  </Typography>
-                  {item.selectedSize && (
+                    {item.name?.[0]}
+                  </Avatar>
+
+                  {/* Product Details */}
+                  <Box sx={{ flex: 1 }}>
                     <Typography
-                      variant="caption"
-                      sx={{ color: '#666', display: 'block', mb: 0.5 }}
+                      sx={{
+                        fontFamily: 'Oswald',
+                        fontWeight: 600,
+                        fontSize: '16px',
+                        mb: 0.5,
+                      }}
                     >
-                      Size: {item.selectedSize}
+                      {item.name}
                     </Typography>
-                  )}
-                  <Typography
-                    sx={{
-                      fontFamily: 'Oswald',
-                      fontWeight: 700,
-                      color: '#8C5A3C',
-                      fontSize: '16px',
-                    }}
-                  >
-                    {item.price} TND
-                  </Typography>
-                </Box>
+                    {item.selectedSize && (
+                      <Typography
+                        variant="caption"
+                        sx={{ color: '#666', display: 'block', mb: 0.5 }}
+                      >
+                        Size: {item.selectedSize}
+                      </Typography>
+                    )}
+                    <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, flexWrap: 'wrap' }}>
+                      <Typography
+                        sx={{
+                          fontFamily: 'Oswald',
+                          fontWeight: 700,
+                          color: '#8C5A3C',
+                          fontSize: '16px',
+                        }}
+                      >
+                        {displayPrice} TND
+                      </Typography>
+                      {hasDiscount && (
+                        <Typography
+                          sx={{
+                            textDecoration: 'line-through',
+                            color: '#999',
+                            fontSize: '12px',
+                          }}
+                        >
+                          {originalPrice} TND
+                        </Typography>
+                      )}
+                    </Box>
+                  </Box>
 
-                {/* Quantity Controls */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <QuantityButton
-                    size="small"
-                    onClick={() => updateQuantity(item._id, item.quantity - 1, item.selectedSize)}
-                  >
-                    <Remove sx={{ fontSize: 14 }} />
-                  </QuantityButton>
-                  <Typography sx={{ minWidth: 32, textAlign: 'center', fontWeight: 600 }}>
-                    {item.quantity}
-                  </Typography>
-                  <QuantityButton
-                    size="small"
-                    onClick={() => updateQuantity(item._id, item.quantity + 1, item.selectedSize)}
-                  >
-                    <Add sx={{ fontSize: 14 }} />
-                  </QuantityButton>
-                </Box>
+                  {/* Quantity Controls */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <QuantityButton
+                      size="small"
+                      onClick={() => updateQuantity(item._id, item.quantity - 1, item.selectedSize)}
+                    >
+                      <Remove sx={{ fontSize: 14 }} />
+                    </QuantityButton>
+                    <Typography sx={{ minWidth: 32, textAlign: 'center', fontWeight: 600 }}>
+                      {item.quantity}
+                    </Typography>
+                    <QuantityButton
+                      size="small"
+                      onClick={() => updateQuantity(item._id, item.quantity + 1, item.selectedSize)}
+                    >
+                      <Add sx={{ fontSize: 14 }} />
+                    </QuantityButton>
+                  </Box>
 
-                {/* Delete Button */}
-                <IconButton
-                  onClick={() => removeFromCart(item._id, item.selectedSize)}
-                  sx={{ color: '#999', '&:hover': { color: '#EF4444' } }}
-                >
-                  <Delete sx={{ fontSize: 18 }} />
-                </IconButton>
-              </CartItem>
-            ))
+                  {/* Delete Button */}
+                  <IconButton
+                    onClick={() => removeFromCart(item._id, item.selectedSize)}
+                    sx={{ color: '#999', '&:hover': { color: '#EF4444' } }}
+                  >
+                    <Delete sx={{ fontSize: 18 }} />
+                  </IconButton>
+                </CartItem>
+              );
+            })
           )}
         </Box>
 
@@ -591,14 +611,26 @@ const Navbar = () => {
                   {subtotal.toFixed(2)} TND
                 </Typography>
               </Stack>
-              <Stack direction="row" justifyContent="space-between">
-                <Typography variant="body2" sx={{ color: '#666' }}>
-                  Shipping
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  {shippingCost.toFixed(2)} TND
-                </Typography>
-              </Stack>
+              {shippingCost > 0 && (
+                <Stack direction="row" justifyContent="space-between">
+                  <Typography variant="body2" sx={{ color: '#666' }}>
+                    Shipping
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {shippingCost.toFixed(2)} TND
+                  </Typography>
+                </Stack>
+              )}
+              {shippingCost === 0 && subtotal > 0 && (
+                <Stack direction="row" justifyContent="space-between">
+                  <Typography variant="body2" sx={{ color: '#10B981', fontWeight: 500 }}>
+                    Free Shipping
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#10B981', fontWeight: 500 }}>
+                    Included
+                  </Typography>
+                </Stack>
+              )}
               <Divider />
               <Stack direction="row" justifyContent="space-between">
                 <Typography variant="h6" sx={{ fontFamily: 'Oswald', fontWeight: 700 }}>
@@ -608,6 +640,33 @@ const Navbar = () => {
                   {total.toFixed(2)} TND
                 </Typography>
               </Stack>
+              
+              {/* Free Shipping Progress Bar */}
+              {subtotal > 0 && subtotal < 100 && (
+                <Box sx={{ mt: 1 }}>
+                  <Typography variant="caption" sx={{ color: '#666', display: 'block', mb: 0.5 }}>
+                    Add {100 - subtotal} TND more for free shipping
+                  </Typography>
+                  <Box
+                    sx={{
+                      height: 4,
+                      bgcolor: '#E0E0E0',
+                      borderRadius: 2,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: `${(subtotal / 100) * 100}%`,
+                        height: '100%',
+                        bgcolor: '#8C5A3C',
+                        borderRadius: 2,
+                      }}
+                    />
+                  </Box>
+                </Box>
+              )}
+              
               <Button
                 fullWidth
                 variant="contained"
@@ -731,7 +790,6 @@ const Navbar = () => {
                   fontWeight: 600,
                   letterSpacing: '2px',
                   color: isSticky ? '#FFFFFF' : '#8C5A3C',
-                  textTransform: 'uppercase',
                   fontSize: { xs: '18px', sm: '20px', md: '24px' },
                   textTransform: 'uppercase',
                 }}

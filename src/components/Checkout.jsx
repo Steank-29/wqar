@@ -43,7 +43,6 @@ import '@fontsource/oswald';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-
 const COLORS = {
   primary: '#1A1A1A',
   secondary: '#8C5A3C',
@@ -62,6 +61,16 @@ const COLORS = {
   gray700: '#616161',
   gray800: '#424242',
   gray900: '#212121',
+};
+
+// Helper function to get full image URL
+const getFullImageUrl = (imagePath) => {
+  if (!imagePath) return null;
+  if (imagePath.startsWith('http')) return imagePath;
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const cleanBaseUrl = baseUrl.replace(/\/api$/, '');
+  const cleanPath = imagePath.replace(/^\/+/, '');
+  return `${cleanBaseUrl}/${cleanPath}`;
 };
 
 const Checkout = () => {
@@ -133,19 +142,31 @@ const Checkout = () => {
       return;
     }
 
+    if (cart.length === 0) {
+      setSnackbar({ 
+        open: true, 
+        message: 'Your cart is empty', 
+        severity: 'error' 
+      });
+      return;
+    }
+
     setSubmitting(true);
     try {
-      // Prepare order data for API
+      // Prepare order data for API with proper price structure
       const orderData = {
         items: cart.map(item => ({
           productId: item.productId || item._id,
           variantKey: item.variantKey,
           name: item.name,
-          price: item.price,
-          originalPrice: item.originalPrice,
+          price: item.price, // Current price (could be discounted)
+          originalPrice: item.originalPrice || item.price, // Original price
           quantity: item.quantity,
           selectedSize: item.selectedSize,
-          mainImage: item.mainImage
+          mainImage: item.mainImage,
+          discount: item.originalPrice && item.originalPrice > item.price 
+            ? ((item.originalPrice - item.price) / item.originalPrice) * 100 
+            : 0
         })),
         customer: {
           fullName: formData.fullName,
@@ -159,7 +180,8 @@ const Checkout = () => {
         shippingCost: shippingCost,
         total: total,
         paymentMethod: formData.paymentMethod,
-        notes: formData.notes
+        notes: formData.notes,
+        orderDate: new Date().toISOString()
       };
       
       // Make API call to backend
@@ -405,7 +427,7 @@ const Checkout = () => {
             justifyContent="center" 
             alignItems="center"
             spacing={6}
-            sx={{ fontSize: '0.875rem' }}
+            sx={{ fontSize: '0.875rem', flexWrap: 'wrap', gap: 2 }}
           >
             <Stack direction="row" alignItems="center" spacing={1}>
               <LocalShipping sx={{ fontSize: 18, color: COLORS.secondary }} />
@@ -785,63 +807,87 @@ const Checkout = () => {
                   
                   <Stack spacing={3} sx={{ mb: 3, maxHeight: '400px', overflowY: 'auto', pr: 1 }}>
                     <AnimatePresence>
-                      {cart.map((item, index) => (
-                        <motion.div
-                          key={item.variantKey}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: -20 }}
-                          transition={{ delay: index * 0.1 }}
-                        >
-                          <Box sx={{ display: 'flex', gap: 2 }}>
-                            <Box sx={{ position: 'relative' }}>
-                              <Avatar
-                                src={item.mainImage ? `https://wqar-api.onrender.com/${item.mainImage}` : null}
-                                variant="rounded"
-                                sx={{ 
-                                  width: 70, 
-                                  height: 70, 
-                                  borderRadius: '12px',
-                                  bgcolor: COLORS.gray100,
-                                }}
-                              >
-                                {!item.mainImage && <Inventory sx={{ color: COLORS.gray400 }} />}
-                              </Avatar>
-                              {item.quantity > 1 && (
-                                <Badge
-                                  badgeContent={item.quantity}
-                                  color="primary"
-                                  sx={{
-                                    '& .MuiBadge-badge': {
-                                      bgcolor: COLORS.secondary,
-                                      color: COLORS.white,
-                                      fontWeight: 600,
-                                    }
+                      {cart.map((item, index) => {
+                        const hasDiscount = item.originalPrice && item.originalPrice > item.price;
+                        const itemTotal = item.price * item.quantity;
+                        const originalTotal = item.originalPrice ? item.originalPrice * item.quantity : itemTotal;
+                        
+                        return (
+                          <motion.div
+                            key={item.variantKey}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            transition={{ delay: index * 0.1 }}
+                          >
+                            <Box sx={{ display: 'flex', gap: 2 }}>
+                              <Box sx={{ position: 'relative' }}>
+                                <Avatar
+                                  src={getFullImageUrl(item.mainImage)}
+                                  variant="rounded"
+                                  sx={{ 
+                                    width: 70, 
+                                    height: 70, 
+                                    borderRadius: '12px',
+                                    bgcolor: COLORS.gray100,
                                   }}
-                                />
-                              )}
+                                >
+                                  {!item.mainImage && <Inventory sx={{ color: COLORS.gray400 }} />}
+                                </Avatar>
+                                {item.quantity > 1 && (
+                                  <Badge
+                                    badgeContent={item.quantity}
+                                    color="primary"
+                                    sx={{
+                                      '& .MuiBadge-badge': {
+                                        bgcolor: COLORS.secondary,
+                                        color: COLORS.white,
+                                        fontWeight: 600,
+                                      }
+                                    }}
+                                  />
+                                )}
+                              </Box>
+                              <Box sx={{ flex: 1 }}>
+                                <Stack direction="row" justifyContent="space-between">
+                                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                                    {item.name}
+                                  </Typography>
+                                  <Box sx={{ textAlign: 'right' }}>
+                                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: COLORS.primary }}>
+                                      {itemTotal.toFixed(2)} TND
+                                    </Typography>
+                                    {hasDiscount && originalTotal > itemTotal && (
+                                      <Typography variant="caption" sx={{ color: COLORS.gray400, textDecoration: 'line-through', display: 'block' }}>
+                                        {originalTotal.toFixed(2)} TND
+                                      </Typography>
+                                    )}
+                                  </Box>
+                                </Stack>
+                                <Typography variant="caption" sx={{ color: COLORS.gray500, display: 'block' }}>
+                                  Size: {item.selectedSize}
+                                </Typography>
+                                <Typography variant="caption" sx={{ color: COLORS.gray500, display: 'block' }}>
+                                  Unit Price: {item.price.toFixed(2)} TND
+                                </Typography>
+                                {hasDiscount && item.originalPrice && (
+                                  <Chip
+                                    label={`Save ${((item.originalPrice - item.price) * item.quantity).toFixed(2)} TND`}
+                                    size="small"
+                                    sx={{ 
+                                      mt: 0.5, 
+                                      bgcolor: alpha(COLORS.success, 0.1),
+                                      color: COLORS.success,
+                                      fontSize: '10px',
+                                      height: '20px'
+                                    }}
+                                  />
+                                )}
+                              </Box>
                             </Box>
-                            <Box sx={{ flex: 1 }}>
-                              <Stack direction="row" justifyContent="space-between">
-                                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                                  {item.name}
-                                </Typography>
-                                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: COLORS.primary }}>
-                                  {(item.price * item.quantity).toFixed(2)} TND
-                                </Typography>
-                              </Stack>
-                              <Typography variant="caption" sx={{ color: COLORS.gray500, display: 'block' }}>
-                                Size: {item.selectedSize}
-                              </Typography>
-                              {item.originalPrice && item.originalPrice > item.price && (
-                                <Typography variant="caption" sx={{ color: COLORS.success }}>
-                                  Save {(item.originalPrice - item.price).toFixed(2)} TND
-                                </Typography>
-                              )}
-                            </Box>
-                          </Box>
-                        </motion.div>
-                      ))}
+                          </motion.div>
+                        );
+                      })}
                     </AnimatePresence>
                   </Stack>
 
@@ -860,7 +906,7 @@ const Checkout = () => {
                     {calculateSavings() > 0 && (
                       <Stack direction="row" justifyContent="space-between">
                         <Typography variant="body2" sx={{ color: COLORS.success }}>
-                          Savings
+                          Total Savings
                         </Typography>
                         <Typography variant="body2" sx={{ color: COLORS.success, fontWeight: 600 }}>
                           -{calculateSavings().toFixed(2)} TND
@@ -876,6 +922,29 @@ const Checkout = () => {
                         {shippingCost === 0 ? 'FREE' : `${shippingCost.toFixed(2)} TND`}
                       </Typography>
                     </Stack>
+
+                    {/* Free Shipping Progress */}
+                    {subtotal < 200 && (
+                      <Box sx={{ mt: 1 }}>
+                        <Typography variant="caption" sx={{ color: COLORS.gray500 }}>
+                          Add {(200 - subtotal).toFixed(2)} TND more for FREE shipping
+                        </Typography>
+                        <Box sx={{ 
+                          mt: 1, 
+                          height: 6, 
+                          bgcolor: COLORS.gray200, 
+                          borderRadius: 3,
+                          overflow: 'hidden'
+                        }}>
+                          <Box sx={{ 
+                            width: `${(subtotal / 200) * 100}%`, 
+                            height: '100%', 
+                            bgcolor: COLORS.secondary,
+                            borderRadius: 3
+                          }} />
+                        </Box>
+                      </Box>
+                    )}
 
                     <Divider />
 
@@ -930,7 +999,7 @@ const Checkout = () => {
                     direction="row" 
                     spacing={2} 
                     justifyContent="center" 
-                    sx={{ mt: 3 }}
+                    sx={{ mt: 3, flexWrap: 'wrap', gap: 1 }}
                   >
                     <Stack direction="row" alignItems="center" spacing={0.5}>
                       <Security sx={{ fontSize: 16, color: COLORS.success }} />

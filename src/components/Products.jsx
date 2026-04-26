@@ -81,6 +81,58 @@ const getFullImageUrl = (imagePath) => {
   return `${cleanBaseUrl}/${cleanPath}`;
 };
 
+// Helper function to get product price for a specific size
+const getProductPrice = (product, size) => {
+  if (!product) return 0;
+  
+  // Check currentPrices (from API response)
+  if (product.currentPrices && product.currentPrices[size]) {
+    return product.currentPrices[size];
+  }
+  
+  // Check prices object (direct from DB)
+  if (product.prices && product.prices[size]) {
+    return product.prices[size];
+  }
+  
+  // Check if price exists for this size in prices object with different casing
+  if (product.prices) {
+    const sizeMap = {
+      '30ml': '30ml',
+      '50ml': '50ml', 
+      '100ml': '100ml'
+    };
+    const mappedSize = sizeMap[size];
+    if (mappedSize && product.prices[mappedSize]) {
+      return product.prices[mappedSize];
+    }
+  }
+  
+  return 0;
+};
+
+// Helper function to get all available sizes with prices
+const getAvailableSizes = (product) => {
+  if (!product) return [];
+  
+  const sizes = ['30ml', '50ml', '100ml'];
+  const availableSizes = [];
+  
+  for (const size of sizes) {
+    const price = getProductPrice(product, size);
+    if (price !== null && price !== undefined && price > 0) {
+      availableSizes.push(size);
+    }
+  }
+  
+  // Also check product.quantity array for backward compatibility
+  if (product.quantity && product.quantity.length > 0) {
+    return product.quantity.filter(size => availableSizes.includes(size));
+  }
+  
+  return availableSizes;
+};
+
 const Products = () => {
   const navigate = useNavigate();
   const theme = useTheme();
@@ -107,6 +159,7 @@ const Products = () => {
   const [selectedSizes, setSelectedSizes] = useState([]);
   const [sortBy, setSortBy] = useState('newest');
   const [inStockOnly, setInStockOnly] = useState(false);
+  const [priceSize, setPriceSize] = useState('30ml');
   
   // UI State
   const [page, setPage] = useState(1);
@@ -114,7 +167,7 @@ const Products = () => {
   const [priceRangeMax, setPriceRangeMax] = useState(500);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-  const sizes = ['50ml', '100ml', '150ml'];
+  const sizes = ['30ml', '50ml', '100ml'];
 
   useEffect(() => {
     loadProducts();
@@ -122,7 +175,7 @@ const Products = () => {
 
   useEffect(() => {
     applyFilters();
-  }, [products, searchQuery, selectedGender, priceRange, selectedSizes, sortBy, inStockOnly]);
+  }, [products, searchQuery, selectedGender, priceRange, selectedSizes, sortBy, inStockOnly, priceSize]);
 
   const loadProducts = async () => {
     setLoading(true);
@@ -130,9 +183,20 @@ const Products = () => {
       const response = await getProducts({ limit: 100 });
       const allProducts = response.data || [];
       setProducts(allProducts);
-      const maxPrice = Math.max(...allProducts.map(p => p.price || 0), 500);
-      setPriceRangeMax(maxPrice);
-      setPriceRange([0, maxPrice]);
+      
+      let maxPrice = 0;
+      allProducts.forEach(product => {
+        // Check all three sizes for max price
+        const price30 = getProductPrice(product, '30ml');
+        const price50 = getProductPrice(product, '50ml');
+        const price100 = getProductPrice(product, '100ml');
+        
+        maxPrice = Math.max(maxPrice, price30, price50, price100);
+      });
+      
+      const finalMaxPrice = Math.max(maxPrice, 500);
+      setPriceRangeMax(finalMaxPrice);
+      setPriceRange([0, finalMaxPrice]);
     } catch (error) {
       console.error('Error loading products:', error);
     } finally {
@@ -154,15 +218,18 @@ const Products = () => {
       filtered = filtered.filter(p => p.gender === selectedGender);
     }
 
-    filtered = filtered.filter(p => 
-      (p.discountedPrice || p.price) >= priceRange[0] && 
-      (p.discountedPrice || p.price) <= priceRange[1]
-    );
+    // Price filter - only include products that have the selected size price within range
+    filtered = filtered.filter(p => {
+      const price = getProductPrice(p, priceSize);
+      return price > 0 && price >= priceRange[0] && price <= priceRange[1];
+    });
 
+    // Size availability filter
     if (selectedSizes.length > 0) {
-      filtered = filtered.filter(p => 
-        p.quantity && p.quantity.some(size => selectedSizes.includes(size))
-      );
+      filtered = filtered.filter(p => {
+        const availableSizes = getAvailableSizes(p);
+        return selectedSizes.some(size => availableSizes.includes(size));
+      });
     }
 
     if (inStockOnly) {
@@ -171,10 +238,10 @@ const Products = () => {
 
     switch (sortBy) {
       case 'price_asc':
-        filtered.sort((a, b) => (a.discountedPrice || a.price) - (b.discountedPrice || b.price));
+        filtered.sort((a, b) => getProductPrice(a, priceSize) - getProductPrice(b, priceSize));
         break;
       case 'price_desc':
-        filtered.sort((a, b) => (b.discountedPrice || b.price) - (a.discountedPrice || a.price));
+        filtered.sort((a, b) => getProductPrice(b, priceSize) - getProductPrice(a, priceSize));
         break;
       case 'rating':
         filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
@@ -197,6 +264,7 @@ const Products = () => {
     setSelectedSizes([]);
     setSortBy('newest');
     setInStockOnly(false);
+    setPriceSize('30ml');
   };
 
   const toggleWishlist = (e, productId) => {
@@ -211,11 +279,20 @@ const Products = () => {
 
   const handleAddToCart = (e, product, selectedSize) => {
     e.stopPropagation();
-    addToCart(product, 1, selectedSize);
-    setCartSnackbar({ 
-      open: true, 
-      message: `${product.name} (${selectedSize}) added to cart`
-    });
+    const price = getProductPrice(product, selectedSize);
+    if (price > 0) {
+      addToCart(product, 1, selectedSize, price);
+      setCartSnackbar({ 
+        open: true, 
+        message: `${product.name} (${selectedSize}) added to cart`
+      });
+    } else {
+      setSnackbar({ 
+        open: true, 
+        message: `Price not available for ${selectedSize}`, 
+        severity: 'error' 
+      });
+    }
   };
 
   const handleUpdateQuantity = (e, productId, size, delta) => {
@@ -237,14 +314,31 @@ const Products = () => {
 
   const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
 
-  // Product Card Component
+  // Product Card Component with equal dimensions
   const ProductCard = ({ product }) => {
-    const discount = product.discountPercentage || 0;
-    const currentPrice = product.discountedPrice || product.price;
-    const isOutOfStock = product.stock === 0;
     const [hovered, setHovered] = useState(false);
-    const [selectedSize, setSelectedSize] = useState(product.quantity?.[0] || '50ml');
+    const [selectedSize, setSelectedSize] = useState(() => {
+      // Set default to first available size with price
+      const availableSizes = getAvailableSizes(product);
+      return availableSizes[0] || '30ml';
+    });
+    
     const cartItem = getCartItem(product._id, selectedSize);
+    
+    const currentPrice = getProductPrice(product, selectedSize);
+    const hasDiscount = product.discountedPrice && product.discountedPrice > 0 && product.discountedPrice < currentPrice;
+    const discount = hasDiscount ? Math.round(((currentPrice - product.discountedPrice) / currentPrice) * 100) : 0;
+    const finalPrice = hasDiscount ? product.discountedPrice : currentPrice;
+    const isOutOfStock = product.stock === 0;
+    const availableSizes = getAvailableSizes(product);
+    const isSizeAvailable = availableSizes.includes(selectedSize);
+    
+    // Get primary image or first image
+    const primaryImage = product.images?.find(img => img.isPrimary) || product.images?.[0];
+    const imageUrl = getFullImageUrl(primaryImage?.url);
+
+    // Don't render if no price available for any size
+    if (availableSizes.length === 0) return null;
 
     return (
       <Zoom in={true} style={{ transitionDelay: '30ms' }}>
@@ -253,37 +347,53 @@ const Products = () => {
           onMouseLeave={() => setHovered(false)}
           elevation={0}
           sx={{
-            borderRadius: isMobile ? '16px' : '20px',
+            borderRadius: isMobile ? '20px' : '24px',
             overflow: 'hidden',
             bgcolor: COLORS.white,
-            border: `1px solid ${hovered ? alpha(COLORS.primary, 0.2) : COLORS.gray100}`,
-            transition: 'all 0.3s ease',
+            border: `1px solid ${hovered ? alpha(COLORS.primary, 0.3) : COLORS.gray200}`,
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             height: '100%',
+            minHeight: isMobile ? 480 : 520,
             display: 'flex',
             flexDirection: 'column',
             position: 'relative',
             cursor: 'pointer',
             '&:hover': {
-              transform: isMobile ? 'translateY(-2px)' : 'translateY(-4px)',
-              boxShadow: '0 12px 28px rgba(0,0,0,0.08)',
+              transform: isMobile ? 'translateY(-4px)' : 'translateY(-8px)',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.12)',
+              border: `1px solid ${alpha(COLORS.primary, 0.3)}`,
             },
           }}
           onClick={() => navigate(`/product/${product._id}`)}
         >
           {/* Badges */}
-          <Box sx={{ position: 'absolute', top: 10, left: 10, zIndex: 2, display: 'flex', gap: 0.5, flexDirection: 'column' }}>
-            {discount > 0 && (
+          <Box sx={{ position: 'absolute', top: 12, left: 12, zIndex: 2, display: 'flex', gap: 0.75, flexDirection: 'column' }}>
+            {hasDiscount && (
               <Chip
                 label={`-${discount}%`}
                 size="small"
-                sx={{ bgcolor: COLORS.success, color: COLORS.white, fontWeight: 600, fontSize: isMobile ? '8px' : '10px', height: isMobile ? 18 : 22 }}
+                sx={{ 
+                  bgcolor: COLORS.success, 
+                  color: COLORS.white, 
+                  fontWeight: 700, 
+                  fontSize: isMobile ? '9px' : '11px', 
+                  height: isMobile ? 20 : 24,
+                  borderRadius: '8px'
+                }}
               />
             )}
             {product.featured && (
               <Chip
                 label="Featured"
                 size="small"
-                sx={{ bgcolor: COLORS.warning, color: COLORS.white, fontWeight: 600, fontSize: isMobile ? '8px' : '10px', height: isMobile ? 18 : 22 }}
+                sx={{ 
+                  bgcolor: COLORS.warning, 
+                  color: COLORS.white, 
+                  fontWeight: 700, 
+                  fontSize: isMobile ? '9px' : '11px', 
+                  height: isMobile ? 20 : 24,
+                  borderRadius: '8px'
+                }}
               />
             )}
           </Box>
@@ -293,31 +403,48 @@ const Products = () => {
             onClick={(e) => toggleWishlist(e, product._id)}
             sx={{
               position: 'absolute',
-              top: 10,
-              right: 10,
+              top: 12,
+              right: 12,
               zIndex: 2,
-              bgcolor: 'rgba(255,255,255,0.9)',
-              width: isMobile ? 28 : 32,
-              height: isMobile ? 28 : 32,
-              '&:hover': { bgcolor: COLORS.white },
+              bgcolor: 'rgba(255,255,255,0.95)',
+              backdropFilter: 'blur(4px)',
+              width: isMobile ? 32 : 36,
+              height: isMobile ? 32 : 36,
+              '&:hover': { bgcolor: COLORS.white, transform: 'scale(1.1)' },
+              transition: 'transform 0.2s',
             }}
           >
-            {wishlist[product._id] ? <Favorite sx={{ color: COLORS.error, fontSize: isMobile ? 14 : 16 }} /> : <FavoriteBorder sx={{ fontSize: isMobile ? 14 : 16 }} />}
+            {wishlist[product._id] ? <Favorite sx={{ color: COLORS.error, fontSize: isMobile ? 16 : 18 }} /> : <FavoriteBorder sx={{ fontSize: isMobile ? 16 : 18 }} />}
           </IconButton>
 
-          {/* Image */}
-          <Box sx={{ position: 'relative', height: isMobile ? 180 : 220, overflow: 'hidden', bgcolor: COLORS.gray50 }}>
+          {/* Image Container - FIXED HEIGHT for consistency */}
+          <Box 
+            sx={{ 
+              position: 'relative', 
+              height: isMobile ? 240 : isTablet ? 260 : 280,
+              overflow: 'hidden', 
+              bgcolor: COLORS.gray50,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
             <img
-              src={getFullImageUrl(product.images?.[0]?.url)}
+              src={imageUrl || '/placeholder-image.jpg'}
               alt={product.name}
               style={{
                 width: '100%',
                 height: '100%',
-                objectFit: 'cover',
-                transition: 'transform 0.3s ease',
+                objectFit: 'contain',
+                transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                 transform: hovered ? 'scale(1.05)' : 'scale(1)',
               }}
-              onError={(e) => { e.target.src = '/placeholder-image.jpg'; }}
+              onError={(e) => { 
+                e.target.src = '/placeholder-image.jpg';
+                e.target.style.objectFit = 'contain';
+              }}
+              loading="lazy"
             />
             {isOutOfStock && (
               <Box sx={{
@@ -326,156 +453,244 @@ const Products = () => {
                 left: 0,
                 right: 0,
                 bottom: 0,
-                bgcolor: 'rgba(0,0,0,0.6)',
+                bgcolor: 'rgba(0,0,0,0.7)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                backdropFilter: 'blur(2px)',
               }}>
-                <Chip label="Out of Stock" sx={{ bgcolor: COLORS.white, fontWeight: 600, fontSize: isMobile ? '9px' : '10px', borderRadius: '20px', height: isMobile ? 22 : 26 }} />
+                <Chip 
+                  label="Out of Stock" 
+                  sx={{ 
+                    bgcolor: COLORS.white, 
+                    fontWeight: 700, 
+                    fontSize: isMobile ? '11px' : '12px', 
+                    borderRadius: '12px', 
+                    height: isMobile ? 26 : 32,
+                    px: 1
+                  }} 
+                />
               </Box>
             )}
           </Box>
 
-          {/* Content */}
-          <CardContent sx={{ p: isMobile ? 1.5 : 2, flexGrow: 1 }}>
-            {/* Gender */}
+          {/* Content - FLEX GROW to fill remaining space */}
+          <CardContent sx={{ p: isMobile ? 2 : 2.5, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+            {/* Gender Chip */}
             <Chip
               label={product.gender?.toUpperCase()}
               size="small"
-              sx={{ bgcolor: alpha(COLORS.primary, 0.1), color: COLORS.primary, fontSize: isMobile ? '8px' : '9px', height: isMobile ? 18 : 20, mb: 0.5 }}
+              sx={{ 
+                bgcolor: alpha(COLORS.primary, 0.1), 
+                color: COLORS.primary, 
+                fontSize: isMobile ? '9px' : '10px', 
+                fontWeight: 600,
+                height: isMobile ? 20 : 24, 
+                mb: 1,
+                borderRadius: '6px',
+                alignSelf: 'flex-start'
+              }}
             />
             
-            {/* Title */}
+            {/* Title - FIXED HEIGHT for consistency */}
             <Typography
               sx={{
                 fontWeight: 700,
-                fontSize: isMobile ? '13px' : '14px',
+                fontSize: isMobile ? '14px' : '16px',
                 fontFamily: 'Oswald',
-                mb: 0.5,
-                lineHeight: 1.3,
+                mb: 1,
+                lineHeight: 1.35,
                 display: '-webkit-box',
                 WebkitLineClamp: 2,
                 WebkitBoxOrient: 'vertical',
                 overflow: 'hidden',
+                minHeight: isMobile ? '44px' : '48px',
               }}
             >
               {product.name}
             </Typography>
 
-            {/* Rating */}
-            <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mb: 1 }}>
-              <Rating value={product.rating || 0} readOnly size="small" precision={0.5} sx={{ '& .MuiRating-icon': { fontSize: isMobile ? '11px' : '12px' } }} />
-              <Typography variant="caption" sx={{ color: COLORS.gray500, fontSize: isMobile ? '9px' : '10px' }}>({product.reviewCount || 0})</Typography>
+            {/* Fragrance note - FIXED HEIGHT */}
+            {product.fragrance && (
+              <Typography
+                sx={{
+                  fontSize: isMobile ? '10px' : '11px',
+                  color: COLORS.gray600,
+                  mb: 1,
+                  display: '-webkit-box',
+                  WebkitLineClamp: 1,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                  minHeight: '24px',
+                }}
+              >
+                {product.fragrance}
+              </Typography>
+            )}
+
+            {/* Rating - FIXED HEIGHT */}
+            <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 1.5, minHeight: '28px' }}>
+              <Rating value={product.rating || 0} readOnly size="small" precision={0.5} sx={{ '& .MuiRating-icon': { fontSize: isMobile ? '14px' : '16px' } }} />
+              <Typography variant="caption" sx={{ color: COLORS.gray500, fontSize: isMobile ? '10px' : '11px', fontWeight: 500 }}>
+                ({product.reviewCount || 0})
+              </Typography>
             </Stack>
 
-            {/* Price */}
-            <Stack direction="row" alignItems="baseline" spacing={0.5} sx={{ mb: 1 }}>
-              <Typography sx={{ fontWeight: 800, fontSize: isMobile ? '16px' : '18px', color: COLORS.primary, fontFamily: 'Oswald' }}>
-                {currentPrice} TND
+            {/* Price - FIXED HEIGHT - Show selected size price */}
+            <Stack direction="row" alignItems="baseline" spacing={1} sx={{ mb: 2, minHeight: '36px' }}>
+              <Typography sx={{ fontWeight: 800, fontSize: isMobile ? '20px' : '24px', color: COLORS.primary, fontFamily: 'Oswald' }}>
+                {finalPrice} TND
               </Typography>
-              {discount > 0 && (
-                <Typography sx={{ textDecoration: 'line-through', color: COLORS.gray400, fontSize: isMobile ? '10px' : '11px' }}>
-                  {product.price} TND
+              {hasDiscount && (
+                <Typography sx={{ textDecoration: 'line-through', color: COLORS.gray500, fontSize: isMobile ? '12px' : '14px', fontWeight: 500 }}>
+                  {currentPrice} TND
                 </Typography>
               )}
             </Stack>
 
-            {/* Size Selector */}
-            {product.quantity && product.quantity.length > 0 && (
-              <Stack direction="row" spacing={0.5} sx={{ mb: 1.5, flexWrap: 'wrap', gap: 0.5 }}>
-                {product.quantity.slice(0, isMobile ? 2 : 3).map((size) => (
-                  <Chip
-                    key={size}
-                    label={size}
+            {/* Size Selector - Show only sizes that have prices */}
+            {availableSizes.length > 0 && (
+              <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap', gap: 1, minHeight: '36px' }}>
+                {sizes.map((size) => {
+                  const sizePrice = getProductPrice(product, size);
+                  const isAvailable = sizePrice > 0 && availableSizes.includes(size);
+                  
+                  return (
+                    <Button
+                      key={size}
+                      variant={selectedSize === size ? 'contained' : 'outlined'}
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isAvailable) {
+                          setSelectedSize(size);
+                        }
+                      }}
+                      disabled={!isAvailable}
+                      sx={{
+                        borderRadius: '8px',
+                        fontSize: isMobile ? '10px' : '11px',
+                        fontWeight: 600,
+                        minWidth: isMobile ? '70px' : '80px',
+                        py: isMobile ? 0.5 : 0.75,
+                        bgcolor: selectedSize === size ? COLORS.primary : 'transparent',
+                        borderColor: selectedSize === size ? COLORS.primary : COLORS.gray300,
+                        color: selectedSize === size ? COLORS.white : (isAvailable ? COLORS.gray700 : COLORS.gray400),
+                        opacity: isAvailable ? 1 : 0.5,
+                        '&:hover': {
+                          bgcolor: isAvailable && selectedSize !== size ? alpha(COLORS.primary, 0.1) : (selectedSize === size ? COLORS.primaryDark : 'transparent'),
+                          borderColor: isAvailable ? COLORS.primary : COLORS.gray300,
+                        }
+                      }}
+                    >
+                      {size}
+                      <Typography component="span" sx={{ ml: 0.5, fontSize: isMobile ? '8px' : '9px', fontWeight: 400 }}>
+                        ({sizePrice} TND)
+                      </Typography>
+                    </Button>
+                  );
+                })}
+              </Stack>
+            )}
+
+            {/* Add to Cart Button - PUSH TO BOTTOM with margin-top auto */}
+            <Box sx={{ mt: 'auto' }}>
+              <Button
+                fullWidth
+                variant="contained"
+                disabled={isOutOfStock || !isSizeAvailable || currentPrice === 0}
+                size="medium"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (cartItem) {
+                    handleUpdateQuantity(e, product._id, selectedSize, 1);
+                  } else {
+                    handleAddToCart(e, product, selectedSize);
+                  }
+                }}
+                sx={{
+                  bgcolor: COLORS.primary,
+                  borderRadius: '12px',
+                  py: isMobile ? 1 : 1.25,
+                  fontFamily: 'Oswald',
+                  fontWeight: 600,
+                  fontSize: isMobile ? '12px' : '14px',
+                  textTransform: 'none',
+                  '&:hover': { bgcolor: COLORS.primaryDark, transform: 'translateY(-1px)' },
+                  transition: 'all 0.2s',
+                }}
+              >
+                {cartItem ? `+ Add More (${cartItem.quantity})` : 'Add to Cart'}
+              </Button>
+
+              {/* Quantity controls if in cart */}
+              {cartItem && cartItem.quantity > 0 && (
+                <Stack direction="row" alignItems="center" justifyContent="center" spacing={1.5} sx={{ mt: 1.5 }}>
+                  <IconButton
                     size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedSize(size);
+                    onClick={(e) => handleUpdateQuantity(e, product._id, selectedSize, -1)}
+                    sx={{ 
+                      border: `1px solid ${COLORS.gray300}`, 
+                      borderRadius: '10px', 
+                      width: 32, 
+                      height: 32,
+                      '&:hover': { borderColor: COLORS.primary, bgcolor: alpha(COLORS.primary, 0.1) }
                     }}
-                    sx={{
-                      fontSize: isMobile ? '8px' : '9px',
-                      height: isMobile ? 20 : 22,
-                      bgcolor: selectedSize === size ? COLORS.primary : COLORS.gray100,
-                      color: selectedSize === size ? COLORS.white : COLORS.gray600,
+                  >
+                    <Remove sx={{ fontSize: 14 }} />
+                  </IconButton>
+                  <Typography variant="body2" sx={{ fontWeight: 700, minWidth: 28, textAlign: 'center', fontSize: '14px' }}>
+                    {cartItem.quantity}
+                  </Typography>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => handleUpdateQuantity(e, product._id, selectedSize, 1)}
+                    sx={{ 
+                      border: `1px solid ${COLORS.gray300}`, 
+                      borderRadius: '10px', 
+                      width: 32, 
+                      height: 32,
+                      '&:hover': { borderColor: COLORS.primary, bgcolor: alpha(COLORS.primary, 0.1) }
                     }}
-                  />
-                ))}
-              </Stack>
-            )}
-
-            {/* Add to Cart Button */}
-            <Button
-              fullWidth
-              variant="contained"
-              disabled={isOutOfStock}
-              size="small"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (cartItem) {
-                  handleUpdateQuantity(e, product._id, selectedSize, 1);
-                } else {
-                  handleAddToCart(e, product, selectedSize);
-                }
-              }}
-              sx={{
-                bgcolor: COLORS.primary,
-                borderRadius: '40px',
-                py: isMobile ? 0.8 : 1,
-                fontFamily: 'Oswald',
-                fontWeight: 600,
-                fontSize: isMobile ? '10px' : '11px',
-                textTransform: 'none',
-                '&:hover': { bgcolor: COLORS.primaryDark },
-              }}
-            >
-              {cartItem ? `+ Add (${cartItem.quantity})` : 'Add to Cart'}
-            </Button>
-
-            {/* Quantity controls if in cart */}
-            {cartItem && cartItem.quantity > 0 && (
-              <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} sx={{ mt: 1 }}>
-                <IconButton
-                  size="small"
-                  onClick={(e) => handleUpdateQuantity(e, product._id, selectedSize, -1)}
-                  sx={{ border: `1px solid ${COLORS.gray300}`, borderRadius: '20px', width: 28, height: 28 }}
-                >
-                  <Remove sx={{ fontSize: 12 }} />
-                </IconButton>
-                <Typography variant="caption" sx={{ fontWeight: 600, minWidth: 24, textAlign: 'center' }}>
-                  {cartItem.quantity}
-                </Typography>
-                <IconButton
-                  size="small"
-                  onClick={(e) => handleUpdateQuantity(e, product._id, selectedSize, 1)}
-                  sx={{ border: `1px solid ${COLORS.gray300}`, borderRadius: '20px', width: 28, height: 28 }}
-                >
-                  <Add sx={{ fontSize: 12 }} />
-                </IconButton>
-              </Stack>
-            )}
+                  >
+                    <Add sx={{ fontSize: 14 }} />
+                  </IconButton>
+                </Stack>
+              )}
+            </Box>
           </CardContent>
         </Card>
       </Zoom>
     );
   };
 
-  // Skeleton Loader
+  // Skeleton Loader with equal dimensions
   const ProductSkeleton = () => (
-    <Card sx={{ borderRadius: isMobile ? '16px' : '20px', overflow: 'hidden' }}>
-      <Skeleton variant="rectangular" height={isMobile ? 180 : 220} />
-      <CardContent sx={{ p: isMobile ? 1.5 : 2 }}>
-        <Skeleton variant="text" width="40%" height={18} />
-        <Skeleton variant="text" width="80%" height={20} />
-        <Skeleton variant="text" width="60%" height={16} />
-        <Skeleton variant="text" width="50%" height={24} />
-        <Skeleton variant="rectangular" height={36} sx={{ borderRadius: '40px', mt: 1 }} />
+    <Card sx={{ 
+      borderRadius: isMobile ? '20px' : '24px', 
+      overflow: 'hidden',
+      height: '100%',
+      minHeight: isMobile ? 480 : 520,
+    }}>
+      <Skeleton variant="rectangular" height={isMobile ? 240 : 280} animation="wave" />
+      <CardContent sx={{ p: isMobile ? 2 : 2.5 }}>
+        <Skeleton variant="text" width="40%" height={24} animation="wave" />
+        <Skeleton variant="text" width="85%" height={32} animation="wave" sx={{ mb: 1 }} />
+        <Skeleton variant="text" width="60%" height={20} animation="wave" sx={{ mb: 1 }} />
+        <Skeleton variant="text" width="50%" height={40} animation="wave" sx={{ mb: 2 }} />
+        <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+          <Skeleton variant="rectangular" width={70} height={32} sx={{ borderRadius: '8px' }} />
+          <Skeleton variant="rectangular" width={70} height={32} sx={{ borderRadius: '8px' }} />
+          <Skeleton variant="rectangular" width={80} height={32} sx={{ borderRadius: '8px' }} />
+        </Stack>
+        <Skeleton variant="rectangular" height={48} sx={{ borderRadius: '12px', mt: 1 }} animation="wave" />
       </CardContent>
     </Card>
   );
 
   return (
     <Box sx={{ bgcolor: COLORS.gray50, minHeight: '100vh' }}>
-      {/* Professional Hero Section */}
+      {/* Hero Section */}
       <Box
         sx={{
           bgcolor: COLORS.primaryDark,
@@ -574,14 +789,14 @@ const Products = () => {
         </Container>
       </Box>
 
-      <Container maxWidth="xl" sx={{ py: { xs: 3, md: 4 } }}>
-        {/* Search and Filter Bar - Removed Cart Icon */}
+      <Container maxWidth="xl" sx={{ py: { xs: 3, md: 5 } }}>
+        {/* Search and Filter Bar */}
         <Paper
           elevation={0}
           sx={{
             p: 1.5,
-            mb: 3,
-            borderRadius: '50px',
+            mb: 4,
+            borderRadius: '60px',
             bgcolor: COLORS.white,
             border: `1px solid ${COLORS.gray100}`,
             display: 'flex',
@@ -624,14 +839,14 @@ const Products = () => {
               displayEmpty
               sx={{ borderRadius: '40px', bgcolor: COLORS.gray50, fontSize: '13px' }}
             >
-              <MenuItem value="" sx={{ fontSize: '13px' }}>All</MenuItem>
+              <MenuItem value="" sx={{ fontSize: '13px' }}>All Genders</MenuItem>
               <MenuItem value="men" sx={{ fontSize: '13px' }}>Men</MenuItem>
               <MenuItem value="women" sx={{ fontSize: '13px' }}>Women</MenuItem>
               <MenuItem value="unisex" sx={{ fontSize: '13px' }}>Unisex</MenuItem>
             </Select>
           </FormControl>
 
-          <FormControl size="small" sx={{ minWidth: 100 }}>
+          <FormControl size="small" sx={{ minWidth: 120 }}>
             <Select
               value={`${priceRange[0]}-${priceRange[1]}`}
               onChange={(e) => {
@@ -642,10 +857,22 @@ const Products = () => {
               sx={{ borderRadius: '40px', bgcolor: COLORS.gray50, fontSize: '13px' }}
             >
               <MenuItem value={`0-${priceRangeMax}`} sx={{ fontSize: '13px' }}>All Prices</MenuItem>
-              <MenuItem value={`0-50`} sx={{ fontSize: '13px' }}>Under 50</MenuItem>
-              <MenuItem value={`50-100`} sx={{ fontSize: '13px' }}>50-100</MenuItem>
-              <MenuItem value={`100-200`} sx={{ fontSize: '13px' }}>100-200</MenuItem>
-              <MenuItem value={`200-${priceRangeMax}`} sx={{ fontSize: '13px' }}>200+</MenuItem>
+              <MenuItem value={`0-50`} sx={{ fontSize: '13px' }}>Under 50 TND</MenuItem>
+              <MenuItem value={`50-100`} sx={{ fontSize: '13px' }}>50-100 TND</MenuItem>
+              <MenuItem value={`100-200`} sx={{ fontSize: '13px' }}>100-200 TND</MenuItem>
+              <MenuItem value={`200-${priceRangeMax}`} sx={{ fontSize: '13px' }}>200+ TND</MenuItem>
+            </Select>
+          </FormControl>
+
+          <FormControl size="small" sx={{ minWidth: 100 }}>
+            <Select
+              value={priceSize}
+              onChange={(e) => setPriceSize(e.target.value)}
+              sx={{ borderRadius: '40px', bgcolor: COLORS.gray50, fontSize: '13px' }}
+            >
+              <MenuItem value="30ml">Show 30ml Price</MenuItem>
+              <MenuItem value="50ml">Show 50ml Price</MenuItem>
+              <MenuItem value="100ml">Show 100ml Price</MenuItem>
             </Select>
           </FormControl>
 
@@ -656,7 +883,7 @@ const Products = () => {
               multiple
               displayEmpty
               renderValue={(selected) => {
-                if (selected.length === 0) return 'Size';
+                if (selected.length === 0) return 'Filter by Size';
                 return selected.join(', ');
               }}
               sx={{ borderRadius: '40px', bgcolor: COLORS.gray50, fontSize: '13px' }}
@@ -695,7 +922,7 @@ const Products = () => {
               px: 1.5,
             }}
           >
-            In Stock
+            In Stock Only
           </Button>
 
           {(searchQuery || selectedGender || selectedSizes.length > 0 || inStockOnly || priceRange[0] > 0 || priceRange[1] < priceRangeMax) && (
@@ -705,16 +932,16 @@ const Products = () => {
               size="small"
               sx={{ borderRadius: '40px', textTransform: 'none', color: COLORS.error, fontSize: '12px' }}
             >
-              Clear
+              Clear All
             </Button>
           )}
         </Paper>
 
-        {/* Products Grid */}
+        {/* Products Grid - Equal width and height columns */}
         {loading ? (
-          <Grid container spacing={2} justifyContent="center">
+          <Grid container spacing={3}>
             {[...Array(12)].map((_, i) => (
-              <Grid item xs={6} sm={4} md={3} key={i}>
+              <Grid item xs={12} sm={6} md={4} lg={3} key={i} sx={{ display: 'flex' }}>
                 <ProductSkeleton />
               </Grid>
             ))}
@@ -734,15 +961,16 @@ const Products = () => {
           </Box>
         ) : (
           <>
-            <Grid container spacing={2} justifyContent="center">
+            <Grid container spacing={3}>
               <AnimatePresence>
                 {getCurrentProducts().map((product, index) => (
-                  <Grid item xs={6} sm={4} md={3} key={product._id}>
+                  <Grid item xs={12} sm={6} md={4} lg={3} key={product._id} sx={{ display: 'flex' }}>
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
                       transition={{ delay: index * 0.02 }}
+                      style={{ width: '100%', height: '100%' }}
                     >
                       <ProductCard product={product} />
                     </motion.div>
@@ -753,7 +981,7 @@ const Products = () => {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}>
                 <Pagination
                   count={totalPages}
                   page={page}
@@ -761,7 +989,7 @@ const Products = () => {
                   color="primary"
                   size={isMobile ? 'medium' : 'large'}
                   sx={{
-                    '& .MuiPaginationItem-root': { borderRadius: '40px' },
+                    '& .MuiPaginationItem-root': { borderRadius: '40px', fontSize: isMobile ? '13px' : '14px' },
                   }}
                 />
               </Box>

@@ -8,14 +8,13 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   TablePagination, TableSortLabel, Tooltip, InputAdornment,
-  styled, CircularProgress, TableFooter, LinearProgress
+  styled, CircularProgress, TableFooter
 } from '@mui/material';
 import {
   Add, Edit, Delete, Visibility, CloudUpload, 
-  AttachMoney, Inventory, LocalOffer, Warning, Close,
   Male, Female, Transgender, FilterList, Search,
-  Refresh, Download, Print, Star, GetApp, PictureAsPdf, TableChart,
-  GridView, Save, Cancel, Image as ImageIcon
+  Refresh, Download, GetApp, PictureAsPdf, TableChart,
+  GridView, Save, Cancel, ImageIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -115,6 +114,14 @@ const getImageUrl = (imagePath) => {
   return `https://wqar-api.onrender.com/${imagePath}`;
 };
 
+// Helper function to get product price for a specific size
+const getProductPrice = (product, size = '30ml') => {
+  if (!product) return 0;
+  if (product.prices && product.prices[size]) return product.prices[size];
+  if (product.currentPrices && product.currentPrices[size]) return product.currentPrices[size];
+  return 0;
+};
+
 const AddProduct = () => {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
@@ -128,7 +135,7 @@ const AddProduct = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterGender, setFilterGender] = useState('all');
   const [filterStock, setFilterStock] = useState('all');
-  const [filterPriceRange, setFilterPriceRange] = useState([0, 200]);
+  const [filterPriceRange, setFilterPriceRange] = useState([0, 500]);
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -137,18 +144,24 @@ const AddProduct = () => {
   const [viewMode, setViewMode] = useState('table');
   const [stats, setStats] = useState({
     totalProducts: 0,
-    totalValue: 0,
+    totalValue30ml: 0,
+    totalValue50ml: 0,
+    totalValue100ml: 0,
     lowStockCount: 0
   });
 
-  // Product Form State
+  // Product Form State - NO DEFAULTS, all prices required
   const [formData, setFormData] = useState({
     name: '',
     fragrance: '',
     quantity: [],
     stock: '',
     gender: 'unisex',
-    price: '',
+    prices: {
+      '30ml': '',
+      '50ml': '',
+      '100ml': ''
+    },
     discountedPrice: '',
     description: '',
     rating: 0,
@@ -162,7 +175,7 @@ const AddProduct = () => {
   const [previewImages, setPreviewImages] = useState([]);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  const quantityOptions = ['50ml', '100ml', '150ml'];
+  const quantityOptions = ['30ml', '50ml', '100ml'];
   const genderOptions = [
     { value: 'men', label: 'Men', icon: <Male /> },
     { value: 'women', label: 'Women', icon: <Female /> },
@@ -201,7 +214,7 @@ const AddProduct = () => {
       if (filterGender !== 'all') params.append('gender', filterGender);
       if (filterStock !== 'all') params.append('stockStatus', filterStock);
       if (filterPriceRange[0] > 0) params.append('minPrice', filterPriceRange[0]);
-      if (filterPriceRange[1] < 200) params.append('maxPrice', filterPriceRange[1]);
+      if (filterPriceRange[1] < 500) params.append('maxPrice', filterPriceRange[1]);
       if (dateRange.start) params.append('startDate', dateRange.start);
       if (dateRange.end) params.append('endDate', dateRange.end);
       params.append('page', page + 1);
@@ -210,12 +223,12 @@ const AddProduct = () => {
       params.append('order', order);
 
       const response = await axiosInstance.get(`/products?${params}`);
-      setProducts(response.data.data);
+      setProducts(response.data.data || []);
     } catch (error) {
-      console.error('Error loading perfumes:', error);
+      console.error('Error loading products:', error);
       setSnackbar({ 
         open: true, 
-        message: error.response?.data?.message || 'Error loading Perfumes', 
+        message: error.response?.data?.message || 'Error loading products', 
         severity: 'error' 
       });
     } finally {
@@ -227,10 +240,46 @@ const AddProduct = () => {
   const loadStats = async () => {
     try {
       const response = await axiosInstance.get('/products/stats/summary');
-      setStats(response.data.data.overview);
+      const overview = response.data.data?.overview || {};
+      setStats({
+        totalProducts: overview.totalProducts || 0,
+        totalValue30ml: overview.totalValue30ml || 0,
+        totalValue50ml: overview.totalValue50ml || 0,
+        totalValue100ml: overview.totalValue100ml || 0,
+        lowStockCount: overview.lowStockCount || 0
+      });
     } catch (error) {
       console.error('Error loading stats:', error);
     }
+  };
+
+  // Validate prices
+  const validatePrices = () => {
+    const price30 = parseFloat(formData.prices['30ml']);
+    const price50 = parseFloat(formData.prices['50ml']);
+    const price100 = parseFloat(formData.prices['100ml']);
+
+    if (isNaN(price30) || price30 <= 0) {
+      setSnackbar({ open: true, message: 'Please enter a valid price for 30ml', severity: 'error' });
+      return false;
+    }
+    if (isNaN(price50) || price50 <= 0) {
+      setSnackbar({ open: true, message: 'Please enter a valid price for 50ml', severity: 'error' });
+      return false;
+    }
+    if (isNaN(price100) || price100 <= 0) {
+      setSnackbar({ open: true, message: 'Please enter a valid price for 100ml', severity: 'error' });
+      return false;
+    }
+    if (price50 <= price30) {
+      setSnackbar({ open: true, message: '50ml price must be greater than 30ml price', severity: 'error' });
+      return false;
+    }
+    if (price100 <= price50) {
+      setSnackbar({ open: true, message: '100ml price must be greater than 50ml price', severity: 'error' });
+      return false;
+    }
+    return true;
   };
 
   // Handle form input changes
@@ -239,6 +288,17 @@ const AddProduct = () => {
     setFormData({
       ...formData,
       [name]: type === 'checkbox' ? checked : value,
+    });
+  };
+
+  // Handle price changes for specific sizes
+  const handlePriceChange = (size, value) => {
+    setFormData({
+      ...formData,
+      prices: {
+        ...formData.prices,
+        [size]: value
+      }
     });
   };
 
@@ -253,7 +313,7 @@ const AddProduct = () => {
 
   // Handle tags change
   const handleTagsChange = (e) => {
-    const tags = e.target.value.split(',').map(tag => tag.trim());
+    const tags = e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag);
     setFormData({
       ...formData,
       tags: tags,
@@ -270,10 +330,14 @@ const AddProduct = () => {
     formDataToSend.append('quantity', JSON.stringify(formData.quantity));
     formDataToSend.append('stock', formData.stock);
     formDataToSend.append('gender', formData.gender);
-    formDataToSend.append('price', formData.price);
-    if (formData.discountedPrice) formDataToSend.append('discountedPrice', formData.discountedPrice);
+    formDataToSend.append('prices', JSON.stringify({
+      '30ml': parseFloat(formData.prices['30ml']),
+      '50ml': parseFloat(formData.prices['50ml']),
+      '100ml': parseFloat(formData.prices['100ml'])
+    }));
+    if (formData.discountedPrice) formDataToSend.append('discountedPrice', parseFloat(formData.discountedPrice));
     if (formData.description) formDataToSend.append('description', formData.description);
-    formDataToSend.append('rating', formData.rating);
+    formDataToSend.append('rating', parseFloat(formData.rating) || 0);
     formDataToSend.append('featured', formData.featured);
     formDataToSend.append('inStock', formData.inStock);
     formDataToSend.append('tags', JSON.stringify(formData.tags));
@@ -289,10 +353,13 @@ const AddProduct = () => {
 
   // Handle product save (Create/Update)
   const handleSaveProduct = async () => {
-    if (!formData.name || !formData.price || !formData.stock) {
+    if (!formData.name || !formData.stock) {
       setSnackbar({ open: true, message: 'Please fill all required fields', severity: 'error' });
       return;
     }
+
+    // Validate all three prices
+    if (!validatePrices()) return;
 
     setLoading(true);
     try {
@@ -304,13 +371,13 @@ const AddProduct = () => {
         response = await axiosInstance.put(`/products/${editProduct._id}`, formDataToSend, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
-        setSnackbar({ open: true, message: 'Perfume updated successfully!', severity: 'success' });
+        setSnackbar({ open: true, message: 'Product updated successfully!', severity: 'success' });
       } else {
         // Create new product
         response = await axiosInstance.post('/products', formDataToSend, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
-        setSnackbar({ open: true, message: 'Perfume added successfully!', severity: 'success' });
+        setSnackbar({ open: true, message: 'Product added successfully!', severity: 'success' });
       }
       
       resetForm();
@@ -318,10 +385,10 @@ const AddProduct = () => {
       await loadProducts();
       await loadStats();
     } catch (error) {
-      console.error('Error saving perfume:', error);
+      console.error('Error saving product:', error);
       setSnackbar({ 
         open: true, 
-        message: error.response?.data?.message || 'Error saving perfume', 
+        message: error.response?.data?.message || 'Error saving product', 
         severity: 'error' 
       });
     } finally {
@@ -334,7 +401,7 @@ const AddProduct = () => {
     setLoading(true);
     try {
       await axiosInstance.delete(`/products/${selectedProduct._id}`);
-      setSnackbar({ open: true, message: 'Perfume deleted successfully!', severity: 'success' });
+      setSnackbar({ open: true, message: 'Product deleted successfully!', severity: 'success' });
       setDeleteDialog(false);
       await loadProducts();
       await loadStats();
@@ -342,7 +409,7 @@ const AddProduct = () => {
       console.error('Error deleting product:', error);
       setSnackbar({ 
         open: true, 
-        message: error.response?.data?.message || 'Error deleting perfume', 
+        message: error.response?.data?.message || 'Error deleting product', 
         severity: 'error' 
       });
     } finally {
@@ -358,14 +425,16 @@ const AddProduct = () => {
 
   // Download products as CSV
   const downloadCSV = () => {
-    const csvHeaders = ['Name', 'Fragrance', 'Sizes', 'Stock', 'Gender', 'Price', 'Discounted Price', 'Category', 'Created Date'];
+    const csvHeaders = ['Name', 'Fragrance', 'Sizes', 'Stock', 'Gender', 'Price (30ml)', 'Price (50ml)', 'Price (100ml)', 'Discounted Price', 'Category', 'Created Date'];
     const csvRows = products.map(product => [
       product.name,
       product.fragrance,
-      product.quantity.join(', '),
+      product.quantity?.join(', ') || '',
       product.stock,
       product.gender,
-      product.price,
+      product.prices?.['30ml'] || 0,
+      product.prices?.['50ml'] || 0,
+      product.prices?.['100ml'] || 0,
       product.discountedPrice || '',
       product.category,
       new Date(product.createdAt).toLocaleDateString(),
@@ -403,10 +472,12 @@ const AddProduct = () => {
     const wsData = products.map(product => ({
       'Product Name': product.name,
       'Fragrance': product.fragrance,
-      'Sizes': product.quantity.join(', '),
+      'Sizes': product.quantity?.join(', ') || '',
       'Stock': product.stock,
       'Gender': product.gender,
-      'Price': product.price,
+      'Price (30ml)': product.prices?.['30ml'] || 0,
+      'Price (50ml)': product.prices?.['50ml'] || 0,
+      'Price (100ml)': product.prices?.['100ml'] || 0,
       'Discounted Price': product.discountedPrice || '',
       'Category': product.category,
       'Created Date': new Date(product.createdAt).toLocaleDateString(),
@@ -427,7 +498,11 @@ const AddProduct = () => {
       quantity: [],
       stock: '',
       gender: 'unisex',
-      price: '',
+      prices: {
+        '30ml': '',
+        '50ml': '',
+        '100ml': ''
+      },
       discountedPrice: '',
       description: '',
       rating: 0,
@@ -448,10 +523,14 @@ const AddProduct = () => {
     setFormData({
       name: product.name,
       fragrance: product.fragrance,
-      quantity: product.quantity,
+      quantity: product.quantity || [],
       stock: product.stock,
       gender: product.gender,
-      price: product.price,
+      prices: product.prices || {
+        '30ml': '',
+        '50ml': '',
+        '100ml': ''
+      },
       discountedPrice: product.discountedPrice || '',
       description: product.description || '',
       rating: product.rating || 0,
@@ -486,7 +565,7 @@ const AddProduct = () => {
     setSearchTerm('');
     setFilterGender('all');
     setFilterStock('all');
-    setFilterPriceRange([0, 200]);
+    setFilterPriceRange([0, 500]);
     setDateRange({ start: '', end: '' });
     setPage(0);
     setTimeout(() => loadProducts(), 100);
@@ -515,7 +594,7 @@ const AddProduct = () => {
             <TableCell>Image</TableCell>
             <TableCell>
               <TableSortLabel active={orderBy === 'name'} direction={order} onClick={() => handleSort('name')}>
-                Perfume Name
+                Product Name
               </TableSortLabel>
             </TableCell>
             <TableCell>Fragrance</TableCell>
@@ -525,11 +604,7 @@ const AddProduct = () => {
                 Stock
               </TableSortLabel>
             </TableCell>
-            <TableCell align="right">
-              <TableSortLabel active={orderBy === 'price'} direction={order} onClick={() => handleSort('price')}>
-                Price
-              </TableSortLabel>
-            </TableCell>
+            <TableCell align="right">Prices (30/50/100ml)</TableCell>
             <TableCell>Gender</TableCell>
             <TableCell>
               <TableSortLabel active={orderBy === 'createdAt'} direction={order} onClick={() => handleSort('createdAt')}>
@@ -560,7 +635,9 @@ const AddProduct = () => {
               <TableCell>{product.fragrance}</TableCell>
               <TableCell>
                 <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                  {product.quantity.map((q) => (<Chip key={q} label={q} size="small" variant="outlined" />))}
+                  {product.quantity?.map((q) => (
+                    <Chip key={q} label={q} size="small" variant="outlined" />
+                  ))}
                 </Box>
               </TableCell>
               <TableCell align="right">
@@ -571,14 +648,18 @@ const AddProduct = () => {
                 />
               </TableCell>
               <TableCell align="right">
-                {product.discountedPrice ? (
-                  <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 600, color: COLORS.success }}>TND{product.discountedPrice}</Typography>
-                    <Typography variant="caption" sx={{ textDecoration: 'line-through', color: COLORS.gray500 }}>TND{product.price}</Typography>
-                  </Box>
-                ) : (
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>TND{product.price}</Typography>
-                )}
+                <Box>
+                  {product.prices && (
+                    <>
+                      <Typography variant="caption" display="block">30ml: {product.prices['30ml'] || 0} TND</Typography>
+                      <Typography variant="caption" display="block">50ml: {product.prices['50ml'] || 0} TND</Typography>
+                      <Typography variant="caption" display="block">100ml: {product.prices['100ml'] || 0} TND</Typography>
+                    </>
+                  )}
+                  {product.discountedPrice && (
+                    <Chip label="Discounted" size="small" sx={{ mt: 0.5, bgcolor: COLORS.success, color: COLORS.white, fontSize: 9 }} />
+                  )}
+                </Box>
               </TableCell>
               <TableCell>
                 <Chip 
@@ -631,69 +712,81 @@ const AddProduct = () => {
   // Product Grid View
   const ProductGridView = () => (
     <Grid container spacing={3}>
-      {products.map((product, index) => (
-        <Grid item xs={12} sm={6} md={4} lg={3} key={product._id}>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-          >
-            <Card sx={{ borderRadius: '16px', overflow: 'hidden', cursor: 'pointer', '&:hover': { transform: 'translateY(-4px)', transition: '0.3s' } }}>
-              <Box sx={{ position: 'relative' }}>
-                <CardMedia 
-                  component="img" 
-                  height="200" 
-                  image={product.images && product.images[0] ? getImageUrl(product.images[0].url) : '/placeholder-image.jpg'}
-                  alt={product.name}
-                  onError={(e) => {
-                    e.target.src = '/placeholder-image.jpg';
-                  }}
-                />
-                {product.discountedPrice && (
-                  <Chip
-                    label={`-${Math.round(((product.price - product.discountedPrice) / product.price) * 100)}%`}
-                    size="small"
-                    sx={{ position: 'absolute', top: 10, right: 10, bgcolor: COLORS.error, color: COLORS.white }}
+      {products.map((product, index) => {
+        const price30 = product.prices?.['30ml'] || 0;
+        const hasDiscount = product.discountedPrice && product.discountedPrice < price30;
+        
+        return (
+          <Grid item xs={12} sm={6} md={4} lg={3} key={product._id}>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+            >
+              <Card sx={{ borderRadius: '16px', overflow: 'hidden', cursor: 'pointer', '&:hover': { transform: 'translateY(-4px)', transition: '0.3s' } }}>
+                <Box sx={{ position: 'relative' }}>
+                  <CardMedia 
+                    component="img" 
+                    height="200" 
+                    image={product.images && product.images[0] ? getImageUrl(product.images[0].url) : '/placeholder-image.jpg'}
+                    alt={product.name}
+                    onError={(e) => {
+                      e.target.src = '/placeholder-image.jpg';
+                    }}
                   />
-                )}
-                {product.featured && (
-                  <Chip label="Featured" size="small" sx={{ position: 'absolute', top: 10, left: 10, bgcolor: COLORS.warning, color: COLORS.white }} />
-                )}
-              </Box>
-              <CardContent>
-                <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1rem', mb: 1 }}>{product.name}</Typography>
-                <Typography variant="body2" sx={{ color: COLORS.gray600, mb: 1 }}>{product.fragrance}</Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                  <Rating value={product.rating} precision={0.5} size="small" readOnly />
-                  <Typography variant="caption">({product.rating})</Typography>
+                  {hasDiscount && (
+                    <Chip
+                      label={`-${Math.round(((price30 - product.discountedPrice) / price30) * 100)}%`}
+                      size="small"
+                      sx={{ position: 'absolute', top: 10, right: 10, bgcolor: COLORS.error, color: COLORS.white }}
+                    />
+                  )}
+                  {product.featured && (
+                    <Chip label="Featured" size="small" sx={{ position: 'absolute', top: 10, left: 10, bgcolor: COLORS.warning, color: COLORS.white }} />
+                  )}
                 </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Box>
-                    {product.discountedPrice ? (
-                      <>
-                        <Typography variant="h6" sx={{ fontWeight: 700, color: COLORS.primary }}>TND{product.discountedPrice}</Typography>
-                        <Typography variant="caption" sx={{ textDecoration: 'line-through', color: COLORS.gray500 }}>TND{product.price}</Typography>
-                      </>
-                    ) : (
-                      <Typography variant="h6" sx={{ fontWeight: 700, color: COLORS.primary }}>TND{product.price}</Typography>
-                    )}
+                <CardContent>
+                  <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1rem', mb: 1 }}>{product.name}</Typography>
+                  <Typography variant="body2" sx={{ color: COLORS.gray600, mb: 1 }}>{product.fragrance}</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    <Rating value={product.rating} precision={0.5} size="small" readOnly />
+                    <Typography variant="caption">({product.rating})</Typography>
                   </Box>
-                  <Chip label={`${product.stock} left`} size="small" sx={{ bgcolor: product.stock < 20 ? `${COLORS.error}15` : `${COLORS.success}15`, color: product.stock < 20 ? COLORS.error : COLORS.success }} />
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                    <Box>
+                      {hasDiscount ? (
+                        <>
+                          <Typography variant="h6" sx={{ fontWeight: 700, color: COLORS.primary }}>{product.discountedPrice} TND</Typography>
+                          <Typography variant="caption" sx={{ textDecoration: 'line-through', color: COLORS.gray500 }}>{price30} TND</Typography>
+                        </>
+                      ) : (
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: COLORS.primary }}>{price30} TND</Typography>
+                      )}
+                    </Box>
+                    <Chip label={`${product.stock} left`} size="small" sx={{ bgcolor: product.stock < 20 ? `${COLORS.error}15` : `${COLORS.success}15`, color: product.stock < 20 ? COLORS.error : COLORS.success }} />
+                  </Box>
+                  {product.prices && (
+                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 1 }}>
+                      <Chip label={`30ml: ${product.prices['30ml']} TND`} size="small" variant="outlined" sx={{ fontSize: 9 }} />
+                      <Chip label={`50ml: ${product.prices['50ml']} TND`} size="small" variant="outlined" sx={{ fontSize: 9 }} />
+                      <Chip label={`100ml: ${product.prices['100ml']} TND`} size="small" variant="outlined" sx={{ fontSize: 9 }} />
+                    </Box>
+                  )}
+                </CardContent>
+                <Box sx={{ p: 2, pt: 0, display: 'flex', gap: 1 }}>
+                  <Button size="small" variant="outlined" fullWidth onClick={() => handleViewProduct(product)}>View</Button>
+                  <Button size="small" variant="outlined" fullWidth onClick={() => handleEditProduct(product)}>Edit</Button>
+                  <Button size="small" variant="outlined" color="error" fullWidth onClick={() => { setSelectedProduct(product); setDeleteDialog(true); }}>Delete</Button>
                 </Box>
-              </CardContent>
-              <Box sx={{ p: 2, pt: 0, display: 'flex', gap: 1 }}>
-                <Button size="small" variant="outlined" fullWidth onClick={() => handleViewProduct(product)}>View</Button>
-                <Button size="small" variant="outlined" fullWidth onClick={() => handleEditProduct(product)}>Edit</Button>
-                <Button size="small" variant="outlined" color="error" fullWidth onClick={() => { setSelectedProduct(product); setDeleteDialog(true); }}>Delete</Button>
-              </Box>
-            </Card>
-          </motion.div>
-        </Grid>
-      ))}
+              </Card>
+            </motion.div>
+          </Grid>
+        );
+      })}
       {products.length === 0 && (
         <Grid item xs={12}>
           <Box sx={{ textAlign: 'center', py: 8 }}>
-            <Typography variant="h6" sx={{ color: COLORS.gray500 }}>No perfumes found</Typography>
+            <Typography variant="h6" sx={{ color: COLORS.gray500 }}>No products found</Typography>
           </Box>
         </Grid>
       )}
@@ -718,10 +811,10 @@ const AddProduct = () => {
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" sx={{ fontWeight: 800, color: COLORS.gray900, fontFamily: 'Oswald' }}>
-          Perfume Management
+          Product Management
         </Typography>
         <Typography variant="body2" sx={{ color: COLORS.gray600 }}>
-          Manage your perfume catalog comes to life, Add new fragrances, update existing ones, and keep your inventory fresh and organized.
+          Manage your product catalog, add new products, update existing ones, and keep your inventory fresh and organized.
         </Typography>
       </Box>
 
@@ -819,7 +912,7 @@ const AddProduct = () => {
       </StyledCard>
 
       {/* Action Bar */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Button variant={viewMode === 'table' ? 'contained' : 'outlined'} onClick={() => setViewMode('table')} startIcon={<TableChart />} size="small">
             Table View
@@ -828,7 +921,7 @@ const AddProduct = () => {
             Grid View
           </Button>
         </Box>
-        <Box sx={{ display: 'flex', gap: 1 }}>
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
           <Button variant="outlined" startIcon={<GetApp />} onClick={downloadCSV} size="small">
             CSV
           </Button>
@@ -839,7 +932,7 @@ const AddProduct = () => {
             Excel
           </Button>
           <Button variant="contained" startIcon={<Add />} onClick={() => { resetForm(); setOpenDialog(true); }} sx={{ bgcolor: COLORS.primary }}>
-            Add Perfume
+            Add Product
           </Button>
         </Box>
       </Box>
@@ -856,17 +949,19 @@ const AddProduct = () => {
       {/* Stats Summary */}
       <GlassCard sx={{ mt: 3, textAlign: 'center' }}>
         <Grid container spacing={2}>
-          <Grid item xs={4}>
+          <Grid item xs={3}>
             <Typography variant="h4" sx={{ fontWeight: 800, color: COLORS.primary }}>{stats.totalProducts}</Typography>
-            <Typography variant="caption" sx={{ color: COLORS.gray600 }}>Total Perfumes</Typography>
+            <Typography variant="caption" sx={{ color: COLORS.gray600 }}>Total Products</Typography>
           </Grid>
-          <Grid item xs={4}>
-            <Typography variant="h4" sx={{ fontWeight: 800, color: COLORS.success }}>
-              TND{stats.totalValue?.toLocaleString() || 0}
-            </Typography>
-            <Typography variant="caption" sx={{ color: COLORS.gray600 }}>Total Value</Typography>
+          <Grid item xs={3}>
+            <Typography variant="h4" sx={{ fontWeight: 800, color: COLORS.success }}>{stats.totalValue30ml?.toLocaleString() || 0}</Typography>
+            <Typography variant="caption" sx={{ color: COLORS.gray600 }}>Total Value (30ml)</Typography>
           </Grid>
-          <Grid item xs={4}>
+          <Grid item xs={3}>
+            <Typography variant="h4" sx={{ fontWeight: 800, color: COLORS.info }}>{stats.totalValue50ml?.toLocaleString() || 0}</Typography>
+            <Typography variant="caption" sx={{ color: COLORS.gray600 }}>Total Value (50ml)</Typography>
+          </Grid>
+          <Grid item xs={3}>
             <Typography variant="h4" sx={{ fontWeight: 800, color: COLORS.warning }}>{stats.lowStockCount}</Typography>
             <Typography variant="caption" sx={{ color: COLORS.gray600 }}>Low Stock Items</Typography>
           </Grid>
@@ -883,10 +978,10 @@ const AddProduct = () => {
       >
         <DialogTitle sx={{ bgcolor: COLORS.gray50, borderBottom: `1px solid ${COLORS.gray200}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
-            Perfume Details
+            Product Details
           </Typography>
           <IconButton onClick={() => setViewDialog(false)} size="small">
-            <Close />
+            <CloseIcon />
           </IconButton>
         </DialogTitle>
         <DialogContent sx={{ p: 3 }}>
@@ -915,24 +1010,31 @@ const AddProduct = () => {
               {/* Product Information */}
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="caption" color="textSecondary">Perfume Name</Typography>
+                  <Typography variant="caption" color="textSecondary">Product Name</Typography>
                   <Typography variant="body1" sx={{ fontWeight: 600, mb: 2 }}>{selectedProduct.name}</Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="caption" color="textSecondary">Fragrance Notes</Typography>
                   <Typography variant="body1" sx={{ fontWeight: 600, mb: 2 }}>{selectedProduct.fragrance}</Typography>
                 </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="caption" color="textSecondary">Price</Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 600, mb: 2 }}>
-                    {selectedProduct.discountedPrice ? (
+                <Grid item xs={12}>
+                  <Typography variant="caption" color="textSecondary">Prices</Typography>
+                  <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
+                    {selectedProduct.prices ? (
                       <>
-                        <span style={{ color: COLORS.success }}>TND{selectedProduct.discountedPrice}</span>
-                        {' '}<span style={{ textDecoration: 'line-through', color: COLORS.gray500 }}>TND{selectedProduct.price}</span>
+                        <Chip label={`30ml: ${selectedProduct.prices['30ml'] || 0} TND`} sx={{ fontWeight: 600 }} />
+                        <Chip label={`50ml: ${selectedProduct.prices['50ml'] || 0} TND`} sx={{ fontWeight: 600 }} />
+                        <Chip label={`100ml: ${selectedProduct.prices['100ml'] || 0} TND`} sx={{ fontWeight: 600 }} />
                       </>
                     ) : (
-                      `TND${selectedProduct.price}`
+                      <Chip label="No prices set" sx={{ fontWeight: 600 }} />
                     )}
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="caption" color="textSecondary">Discounted Price</Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 600, mb: 2 }}>
+                    {selectedProduct.discountedPrice ? `${selectedProduct.discountedPrice} TND` : 'No discount'}
                   </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -947,15 +1049,15 @@ const AddProduct = () => {
                   <Typography variant="caption" color="textSecondary">Category</Typography>
                   <Typography variant="body1" sx={{ fontWeight: 600, mb: 2 }}>{selectedProduct.category}</Typography>
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12}>
                   <Typography variant="caption" color="textSecondary">Available Sizes</Typography>
                   <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
-                    {selectedProduct.quantity.map((size) => (
+                    {selectedProduct.quantity?.map((size) => (
                       <Chip key={size} label={size} size="small" />
                     ))}
                   </Box>
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12}>
                   <Typography variant="caption" color="textSecondary">Rating</Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                     <Rating value={selectedProduct.rating} precision={0.5} readOnly />
@@ -991,7 +1093,7 @@ const AddProduct = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Add/Edit Product Dialog */}
+      {/* Add/Edit Product Dialog - UPDATED with no defaults */}
       <Dialog 
         open={openDialog} 
         onClose={() => setOpenDialog(false)} 
@@ -1001,10 +1103,10 @@ const AddProduct = () => {
       >
         <DialogTitle sx={{ bgcolor: COLORS.gray50, borderBottom: `1px solid ${COLORS.gray200}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
-            {editProduct ? 'Edit Perfume' : 'Add New Perfume'}
+            {editProduct ? 'Edit Product' : 'Add New Product'}
           </Typography>
           <IconButton onClick={() => setOpenDialog(false)} size="small">
-            <Close />
+            <CloseIcon />
           </IconButton>
         </DialogTitle>
         <DialogContent sx={{ p: 3 }}>
@@ -1012,13 +1114,13 @@ const AddProduct = () => {
             {/* Product Image Upload Section */}
             <Box>
               <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <ImageIcon /> Perfume Images
+                <ImageIcon /> Product Images
               </Typography>
               <DropzoneContainer {...getRootProps()} isDragActive={isDragActive}>
                 <input {...getInputProps()} />
                 <CloudUpload sx={{ fontSize: 48, color: COLORS.primary, mb: 2 }} />
                 <Typography variant="body1" gutterBottom>
-                  {isDragActive ? 'Drop your images here' : 'Drag & drop perfume images here'}
+                  {isDragActive ? 'Drop your images here' : 'Drag & drop product images here'}
                 </Typography>
                 <Typography variant="caption" color="textSecondary">
                   or click to select files (Max 5 images, up to 5MB each)
@@ -1042,7 +1144,7 @@ const AddProduct = () => {
                           setImages(images.filter((_, i) => i !== index));
                         }}
                       >
-                        <Close fontSize="small" />
+                        <CloseIcon fontSize="small" />
                       </IconButton>
                     </Box>
                   ))}
@@ -1058,7 +1160,7 @@ const AddProduct = () => {
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <TextField
                   fullWidth
-                  label="Perfume Name *"
+                  label="Product Name *"
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
@@ -1079,13 +1181,13 @@ const AddProduct = () => {
                 
                 <TextField
                   fullWidth
-                  label="Perfume Description"
+                  label="Product Description"
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
                   multiline
                   rows={3}
-                  placeholder="Detailed description of the perfume..."
+                  placeholder="Detailed description of the product..."
                 />
 
                 <TextField
@@ -1102,32 +1204,65 @@ const AddProduct = () => {
 
             <Divider />
 
-            {/* Pricing & Stock */}
+            {/* Pricing & Stock - NO DEFAULTS */}
             <Box>
               <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>Pricing & Inventory</Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <TextField
-                  fullWidth
-                  label="Original Price *"
-                  name="price"
-                  type="number"
-                  value={formData.price}
-                  onChange={handleInputChange}
-                  required
-                  InputProps={{ startAdornment: <InputAdornment position="start">TND</InputAdornment> }}
-                  placeholder="0.00"
-                />
+                <Typography variant="subtitle2" sx={{ fontWeight: 600, color: COLORS.primary }}>
+                  Prices per Size * (All three required)
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={4}>
+                    <TextField
+                      fullWidth
+                      label="30ml Price *"
+                      type="number"
+                      value={formData.prices['30ml']}
+                      onChange={(e) => handlePriceChange('30ml', e.target.value)}
+                      required
+                      InputProps={{ startAdornment: <InputAdornment position="start">TND</InputAdornment> }}
+                      placeholder="Enter price"
+                      helperText="Required"
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <TextField
+                      fullWidth
+                      label="50ml Price *"
+                      type="number"
+                      value={formData.prices['50ml']}
+                      onChange={(e) => handlePriceChange('50ml', e.target.value)}
+                      required
+                      InputProps={{ startAdornment: <InputAdornment position="start">TND</InputAdornment> }}
+                      placeholder="Enter price"
+                      helperText="Must be > 30ml price"
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <TextField
+                      fullWidth
+                      label="100ml Price *"
+                      type="number"
+                      value={formData.prices['100ml']}
+                      onChange={(e) => handlePriceChange('100ml', e.target.value)}
+                      required
+                      InputProps={{ startAdornment: <InputAdornment position="start">TND</InputAdornment> }}
+                      placeholder="Enter price"
+                      helperText="Must be > 50ml price"
+                    />
+                  </Grid>
+                </Grid>
                 
                 <TextField
                   fullWidth
-                  label="Discounted Price"
+                  label="Discounted Price (Optional)"
                   name="discountedPrice"
                   type="number"
                   value={formData.discountedPrice}
                   onChange={handleInputChange}
                   InputProps={{ startAdornment: <InputAdornment position="start">TND</InputAdornment> }}
                   placeholder="0.00"
-                  helperText="Leave empty if no discount"
+                  helperText="Apply discount to all sizes (must be less than all original prices)"
                 />
                 
                 <TextField
@@ -1215,7 +1350,7 @@ const AddProduct = () => {
                 
                 <FormControlLabel
                   control={<Switch checked={formData.featured} onChange={handleInputChange} name="featured" />}
-                  label="Featured Perfume"
+                  label="Featured Product"
                 />
               </Box>
             </Box>
@@ -1230,8 +1365,9 @@ const AddProduct = () => {
             variant="contained" 
             startIcon={<Save />}
             sx={{ bgcolor: COLORS.primary, '&:hover': { bgcolor: COLORS.primaryDark } }}
+            disabled={loading}
           >
-            {editProduct ? 'Update Perfume' : 'Add Perfume'}
+            {editProduct ? 'Update Product' : 'Add Product'}
           </Button>
         </DialogActions>
       </Dialog>
