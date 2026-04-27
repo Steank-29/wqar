@@ -254,33 +254,36 @@ const AddProduct = () => {
   };
 
   // Validate prices
-  const validatePrices = () => {
-    const price30 = parseFloat(formData.prices['30ml']);
-    const price50 = parseFloat(formData.prices['50ml']);
-    const price100 = parseFloat(formData.prices['100ml']);
+// Validate prices - UPDATED
+const validatePrices = () => {
+  const price30 = parseFloat(formData.prices['30ml']);
+  const price50 = parseFloat(formData.prices['50ml']);
+  const price100 = parseFloat(formData.prices['100ml']);
 
-    if (isNaN(price30) || price30 <= 0) {
-      setSnackbar({ open: true, message: 'Please enter a valid price for 30ml', severity: 'error' });
-      return false;
-    }
-    if (isNaN(price50) || price50 <= 0) {
-      setSnackbar({ open: true, message: 'Please enter a valid price for 50ml', severity: 'error' });
-      return false;
-    }
-    if (isNaN(price100) || price100 <= 0) {
-      setSnackbar({ open: true, message: 'Please enter a valid price for 100ml', severity: 'error' });
-      return false;
-    }
-    if (price50 <= price30) {
-      setSnackbar({ open: true, message: '50ml price must be greater than 30ml price', severity: 'error' });
-      return false;
-    }
-    if (price100 <= price50) {
-      setSnackbar({ open: true, message: '100ml price must be greater than 50ml price', severity: 'error' });
-      return false;
-    }
-    return true;
-  };
+  console.log('Validating prices:', { price30, price50, price100 });
+
+  if (isNaN(price30) || price30 <= 0) {
+    setSnackbar({ open: true, message: 'Please enter a valid price for 30ml', severity: 'error' });
+    return false;
+  }
+  if (isNaN(price50) || price50 <= 0) {
+    setSnackbar({ open: true, message: 'Please enter a valid price for 50ml', severity: 'error' });
+    return false;
+  }
+  if (isNaN(price100) || price100 <= 0) {
+    setSnackbar({ open: true, message: 'Please enter a valid price for 100ml', severity: 'error' });
+    return false;
+  }
+  if (price50 <= price30) {
+    setSnackbar({ open: true, message: '50ml price must be greater than 30ml price', severity: 'error' });
+    return false;
+  }
+  if (price100 <= price50) {
+    setSnackbar({ open: true, message: '100ml price must be greater than 50ml price', severity: 'error' });
+    return false;
+  }
+  return true;
+};
 
   // Handle form input changes
   const handleInputChange = (e) => {
@@ -321,40 +324,56 @@ const AddProduct = () => {
   };
 
   // Create form data for API
-  const createFormData = () => {
-    const formDataToSend = new FormData();
-    
-    // Add all text fields
-    formDataToSend.append('name', formData.name);
-    formDataToSend.append('fragrance', formData.fragrance);
-    formDataToSend.append('quantity', JSON.stringify(formData.quantity));
-    formDataToSend.append('stock', formData.stock);
-    formDataToSend.append('gender', formData.gender);
-    formDataToSend.append('prices', JSON.stringify({
-      '30ml': parseFloat(formData.prices['30ml']),
-      '50ml': parseFloat(formData.prices['50ml']),
-      '100ml': parseFloat(formData.prices['100ml'])
-    }));
-    if (formData.discountedPrice) formDataToSend.append('discountedPrice', parseFloat(formData.discountedPrice));
-    if (formData.description) formDataToSend.append('description', formData.description);
-    formDataToSend.append('rating', parseFloat(formData.rating) || 0);
-    formDataToSend.append('featured', formData.featured);
-    formDataToSend.append('inStock', formData.inStock);
-    formDataToSend.append('tags', JSON.stringify(formData.tags));
-    formDataToSend.append('category', formData.category);
-    
-    // Add images
-    images.forEach(image => {
-      formDataToSend.append('images', image.file);
-    });
-    
-    // Add replaceImages flag for updates
-    if (editProduct && images.length > 0) {
-      formDataToSend.append('replaceImages', 'true');
-    }
-    
-    return formDataToSend;
+// Create form data for API - FIXED VERSION
+const createFormData = () => {
+  const formDataToSend = new FormData();
+  
+  // Add all text fields
+  formDataToSend.append('name', formData.name);
+  formDataToSend.append('fragrance', formData.fragrance);
+  formDataToSend.append('quantity', JSON.stringify(formData.quantity));
+  formDataToSend.append('stock', formData.stock);
+  formDataToSend.append('gender', formData.gender);
+  
+  // IMPORTANT FIX: Send prices as a JSON string
+  const pricesObject = {
+    '30ml': parseFloat(formData.prices['30ml']),
+    '50ml': parseFloat(formData.prices['50ml']),
+    '100ml': parseFloat(formData.prices['100ml'])
   };
+  formDataToSend.append('prices', JSON.stringify(pricesObject));
+  
+  // Add other fields if they exist
+  if (formData.discountedPrice && formData.discountedPrice !== '') {
+    formDataToSend.append('discountedPrice', parseFloat(formData.discountedPrice));
+  }
+  if (formData.description && formData.description !== '') {
+    formDataToSend.append('description', formData.description);
+  }
+  formDataToSend.append('rating', parseFloat(formData.rating) || 0);
+  formDataToSend.append('featured', formData.featured);
+  formDataToSend.append('inStock', formData.inStock);
+  formDataToSend.append('tags', JSON.stringify(formData.tags));
+  formDataToSend.append('category', formData.category);
+  
+  // Add images
+  images.forEach(image => {
+    formDataToSend.append('images', image.file);
+  });
+  
+  // Add replaceImages flag for updates
+  if (editProduct && images.length > 0) {
+    formDataToSend.append('replaceImages', 'true');
+  }
+  
+  // Log what we're sending for debugging
+  console.log('Sending form data:');
+  for (let pair of formDataToSend.entries()) {
+    console.log(pair[0], pair[1]);
+  }
+  
+  return formDataToSend;
+};
 
   // Handle product save (Create/Update)
   const handleSaveProduct = async () => {
