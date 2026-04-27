@@ -14,7 +14,7 @@ import {
   Add, Edit, Delete, Visibility, CloudUpload, 
   Male, Female, Transgender, FilterList, Search,
   Refresh, Download, GetApp, PictureAsPdf, TableChart,
-  GridView, Save, Cancel, Image as ImageIcon
+  GridView, Save, Cancel, Image as ImageIcon, Close as CloseIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
