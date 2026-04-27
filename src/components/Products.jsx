@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -85,17 +85,14 @@ const getFullImageUrl = (imagePath) => {
 const getProductPrice = (product, size) => {
   if (!product) return 0;
   
-  // Check currentPrices (from API response)
   if (product.currentPrices && product.currentPrices[size]) {
     return product.currentPrices[size];
   }
   
-  // Check prices object (direct from DB)
   if (product.prices && product.prices[size]) {
     return product.prices[size];
   }
   
-  // Check if price exists for this size in prices object with different casing
   if (product.prices) {
     const sizeMap = {
       '30ml': '30ml',
@@ -125,7 +122,6 @@ const getAvailableSizes = (product) => {
     }
   }
   
-  // Also check product.quantity array for backward compatibility
   if (product.quantity && product.quantity.length > 0) {
     return product.quantity.filter(size => availableSizes.includes(size));
   }
@@ -141,18 +137,15 @@ const Products = () => {
   const { t } = useTranslation();
   const { isRTL, currentLanguage } = useLanguage();
   
-  // Use CartContext
-  const { addToCart, updateQuantity, cart, cartCount } = useCart();
+  const { addToCart, updateQuantity, cart } = useCart();
   
   const [cartSnackbar, setCartSnackbar] = useState({ open: false, message: '' });
   
-  // State
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [wishlist, setWishlist] = useState({});
   
-  // Filter State
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGender, setSelectedGender] = useState('');
   const [priceRange, setPriceRange] = useState([0, 500]);
@@ -161,7 +154,6 @@ const Products = () => {
   const [inStockOnly, setInStockOnly] = useState(false);
   const [priceSize, setPriceSize] = useState('30ml');
   
-  // UI State
   const [page, setPage] = useState(1);
   const [productsPerPage] = useState(12);
   const [priceRangeMax, setPriceRangeMax] = useState(500);
@@ -169,11 +161,64 @@ const Products = () => {
 
   const sizes = ['30ml', '50ml', '100ml'];
 
+  // Load products on mount - FIXED to not cause infinite refresh
   useEffect(() => {
     loadProducts();
   }, []);
 
+  // Apply filters when dependencies change - FIXED with useCallback
   useEffect(() => {
+    const applyFilters = () => {
+      let filtered = [...products];
+
+      if (searchQuery) {
+        filtered = filtered.filter(p => 
+          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.fragrance?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+      }
+
+      if (selectedGender) {
+        filtered = filtered.filter(p => p.gender === selectedGender);
+      }
+
+      filtered = filtered.filter(p => {
+        const price = getProductPrice(p, priceSize);
+        return price > 0 && price >= priceRange[0] && price <= priceRange[1];
+      });
+
+      if (selectedSizes.length > 0) {
+        filtered = filtered.filter(p => {
+          const availableSizes = getAvailableSizes(p);
+          return selectedSizes.some(size => availableSizes.includes(size));
+        });
+      }
+
+      if (inStockOnly) {
+        filtered = filtered.filter(p => p.stock > 0);
+      }
+
+      switch (sortBy) {
+        case 'price_asc':
+          filtered.sort((a, b) => getProductPrice(a, priceSize) - getProductPrice(b, priceSize));
+          break;
+        case 'price_desc':
+          filtered.sort((a, b) => getProductPrice(b, priceSize) - getProductPrice(a, priceSize));
+          break;
+        case 'rating':
+          filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+          break;
+        case 'newest':
+          filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          break;
+        default:
+          break;
+      }
+
+      setFilteredProducts(filtered);
+      setPage(1);
+    };
+
     applyFilters();
   }, [products, searchQuery, selectedGender, priceRange, selectedSizes, sortBy, inStockOnly, priceSize]);
 
@@ -186,7 +231,6 @@ const Products = () => {
       
       let maxPrice = 0;
       allProducts.forEach(product => {
-        // Check all three sizes for max price
         const price30 = getProductPrice(product, '30ml');
         const price50 = getProductPrice(product, '50ml');
         const price100 = getProductPrice(product, '100ml');
@@ -202,59 +246,6 @@ const Products = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const applyFilters = () => {
-    let filtered = [...products];
-
-    if (searchQuery) {
-      filtered = filtered.filter(p => 
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.fragrance?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    if (selectedGender) {
-      filtered = filtered.filter(p => p.gender === selectedGender);
-    }
-
-    // Price filter - only include products that have the selected size price within range
-    filtered = filtered.filter(p => {
-      const price = getProductPrice(p, priceSize);
-      return price > 0 && price >= priceRange[0] && price <= priceRange[1];
-    });
-
-    // Size availability filter
-    if (selectedSizes.length > 0) {
-      filtered = filtered.filter(p => {
-        const availableSizes = getAvailableSizes(p);
-        return selectedSizes.some(size => availableSizes.includes(size));
-      });
-    }
-
-    if (inStockOnly) {
-      filtered = filtered.filter(p => p.stock > 0);
-    }
-
-    switch (sortBy) {
-      case 'price_asc':
-        filtered.sort((a, b) => getProductPrice(a, priceSize) - getProductPrice(b, priceSize));
-        break;
-      case 'price_desc':
-        filtered.sort((a, b) => getProductPrice(b, priceSize) - getProductPrice(a, priceSize));
-        break;
-      case 'rating':
-        filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        break;
-      case 'newest':
-        filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        break;
-      default:
-        break;
-    }
-
-    setFilteredProducts(filtered);
-    setPage(1);
   };
 
   const clearAllFilters = () => {
@@ -303,41 +294,37 @@ const Products = () => {
     }
   };
 
-  const getCartItem = (productId, size) => {
+  const getCartItem = useCallback((productId, size) => {
     return cart.find(item => item._id === productId && item.selectedSize === size);
-  };
+  }, [cart]);
 
-  const getCurrentProducts = () => {
+  const getCurrentProducts = useMemo(() => {
     const startIndex = (page - 1) * productsPerPage;
     return filteredProducts.slice(startIndex, startIndex + productsPerPage);
-  };
+  }, [filteredProducts, page, productsPerPage]);
 
   const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
 
-  // Product Card Component with equal dimensions
-  const ProductCard = ({ product }) => {
+  // Product Card Component
+  const ProductCard = useCallback(({ product }) => {
     const [hovered, setHovered] = useState(false);
     const [selectedSize, setSelectedSize] = useState(() => {
-      // Set default to first available size with price
       const availableSizes = getAvailableSizes(product);
       return availableSizes[0] || '30ml';
     });
     
     const cartItem = getCartItem(product._id, selectedSize);
-    
     const currentPrice = getProductPrice(product, selectedSize);
-    const hasDiscount = product.discountedPrice && product.discountedPrice > 0 && product.discountedPrice < currentPrice;
-    const discount = hasDiscount ? Math.round(((currentPrice - product.discountedPrice) / currentPrice) * 100) : 0;
-    const finalPrice = hasDiscount ? product.discountedPrice : currentPrice;
     const isOutOfStock = product.stock === 0;
     const availableSizes = getAvailableSizes(product);
     const isSizeAvailable = availableSizes.includes(selectedSize);
     
-    // Get primary image or first image
     const primaryImage = product.images?.find(img => img.isPrimary) || product.images?.[0];
     const imageUrl = getFullImageUrl(primaryImage?.url);
 
-    // Don't render if no price available for any size
+    // Split fragrance notes into chips
+    const fragranceNotes = product.fragrance?.split(',').map(note => note.trim()) || [];
+
     if (availableSizes.length === 0) return null;
 
     return (
@@ -368,20 +355,6 @@ const Products = () => {
         >
           {/* Badges */}
           <Box sx={{ position: 'absolute', top: 12, left: 12, zIndex: 2, display: 'flex', gap: 0.75, flexDirection: 'column' }}>
-            {hasDiscount && (
-              <Chip
-                label={`-${discount}%`}
-                size="small"
-                sx={{ 
-                  bgcolor: COLORS.success, 
-                  color: COLORS.white, 
-                  fontWeight: 700, 
-                  fontSize: isMobile ? '9px' : '11px', 
-                  height: isMobile ? 20 : 24,
-                  borderRadius: '8px'
-                }}
-              />
-            )}
             {product.featured && (
               <Chip
                 label="Featured"
@@ -417,7 +390,7 @@ const Products = () => {
             {wishlist[product._id] ? <Favorite sx={{ color: COLORS.error, fontSize: isMobile ? 16 : 18 }} /> : <FavoriteBorder sx={{ fontSize: isMobile ? 16 : 18 }} />}
           </IconButton>
 
-          {/* Image Container - FIXED HEIGHT for consistency */}
+          {/* Image Container */}
           <Box 
             sx={{ 
               position: 'relative', 
@@ -474,7 +447,7 @@ const Products = () => {
             )}
           </Box>
 
-          {/* Content - FLEX GROW to fill remaining space */}
+          {/* Content */}
           <CardContent sx={{ p: isMobile ? 2 : 2.5, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
             {/* Gender Chip */}
             <Chip
@@ -492,7 +465,7 @@ const Products = () => {
               }}
             />
             
-            {/* Title - FIXED HEIGHT for consistency */}
+            {/* Title */}
             <Typography
               sx={{
                 fontWeight: 700,
@@ -510,25 +483,40 @@ const Products = () => {
               {product.name}
             </Typography>
 
-            {/* Fragrance note - FIXED HEIGHT */}
-            {product.fragrance && (
-              <Typography
-                sx={{
-                  fontSize: isMobile ? '10px' : '11px',
-                  color: COLORS.gray600,
-                  mb: 1,
-                  display: '-webkit-box',
-                  WebkitLineClamp: 1,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                  minHeight: '24px',
-                }}
-              >
-                {product.fragrance}
-              </Typography>
+            {/* Fragrance Notes as Chips - NEW */}
+            {fragranceNotes.length > 0 && (
+              <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 1, minHeight: '40px' }}>
+                {fragranceNotes.slice(0, 3).map((note, idx) => (
+                  <Chip
+                    key={idx}
+                    label={note}
+                    size="small"
+                    variant="outlined"
+                    sx={{
+                      fontSize: isMobile ? '8px' : '9px',
+                      fontFamily: 'Oswald, sans-serif',
+                      borderColor: alpha(COLORS.primary, 0.3),
+                      color: alpha(COLORS.gray700, 0.8),
+                      height: isMobile ? 22 : 24,
+                    }}
+                  />
+                ))}
+                {fragranceNotes.length > 3 && (
+                  <Chip
+                    label={`+${fragranceNotes.length - 3}`}
+                    size="small"
+                    variant="outlined"
+                    sx={{
+                      fontSize: isMobile ? '8px' : '9px',
+                      fontFamily: 'Oswald, sans-serif',
+                      height: isMobile ? 22 : 24,
+                    }}
+                  />
+                )}
+              </Box>
             )}
 
-            {/* Rating - FIXED HEIGHT */}
+            {/* Rating */}
             <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 1.5, minHeight: '28px' }}>
               <Rating value={product.rating || 0} readOnly size="small" precision={0.5} sx={{ '& .MuiRating-icon': { fontSize: isMobile ? '14px' : '16px' } }} />
               <Typography variant="caption" sx={{ color: COLORS.gray500, fontSize: isMobile ? '10px' : '11px', fontWeight: 500 }}>
@@ -536,19 +524,14 @@ const Products = () => {
               </Typography>
             </Stack>
 
-            {/* Price - FIXED HEIGHT - Show selected size price */}
+            {/* Price - No discount display */}
             <Stack direction="row" alignItems="baseline" spacing={1} sx={{ mb: 2, minHeight: '36px' }}>
               <Typography sx={{ fontWeight: 800, fontSize: isMobile ? '20px' : '24px', color: COLORS.primary, fontFamily: 'Oswald' }}>
-                {finalPrice} TND
+                {currentPrice} TND
               </Typography>
-              {hasDiscount && (
-                <Typography sx={{ textDecoration: 'line-through', color: COLORS.gray500, fontSize: isMobile ? '12px' : '14px', fontWeight: 500 }}>
-                  {currentPrice} TND
-                </Typography>
-              )}
             </Stack>
 
-            {/* Size Selector - Show only sizes that have prices */}
+            {/* Size Selector */}
             {availableSizes.length > 0 && (
               <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap', gap: 1, minHeight: '36px' }}>
                 {sizes.map((size) => {
@@ -593,7 +576,7 @@ const Products = () => {
               </Stack>
             )}
 
-            {/* Add to Cart Button - PUSH TO BOTTOM with margin-top auto */}
+            {/* Add to Cart Button */}
             <Box sx={{ mt: 'auto' }}>
               <Button
                 fullWidth
@@ -662,9 +645,9 @@ const Products = () => {
         </Card>
       </Zoom>
     );
-  };
+  }, [isMobile, isTablet, wishlist, getCartItem, handleAddToCart, handleUpdateQuantity, navigate, toggleWishlist]);
 
-  // Skeleton Loader with equal dimensions
+  // Skeleton Loader
   const ProductSkeleton = () => (
     <Card sx={{ 
       borderRadius: isMobile ? '20px' : '24px', 
@@ -676,7 +659,11 @@ const Products = () => {
       <CardContent sx={{ p: isMobile ? 2 : 2.5 }}>
         <Skeleton variant="text" width="40%" height={24} animation="wave" />
         <Skeleton variant="text" width="85%" height={32} animation="wave" sx={{ mb: 1 }} />
-        <Skeleton variant="text" width="60%" height={20} animation="wave" sx={{ mb: 1 }} />
+        <Box sx={{ display: 'flex', gap: 0.5, mb: 1 }}>
+          <Skeleton variant="rectangular" width={40} height={22} sx={{ borderRadius: '16px' }} />
+          <Skeleton variant="rectangular" width={50} height={22} sx={{ borderRadius: '16px' }} />
+          <Skeleton variant="rectangular" width={35} height={22} sx={{ borderRadius: '16px' }} />
+        </Box>
         <Skeleton variant="text" width="50%" height={40} animation="wave" sx={{ mb: 2 }} />
         <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
           <Skeleton variant="rectangular" width={70} height={32} sx={{ borderRadius: '8px' }} />
@@ -937,7 +924,7 @@ const Products = () => {
           )}
         </Paper>
 
-        {/* Products Grid - Equal width and height columns */}
+        {/* Products Grid */}
         {loading ? (
           <Grid container spacing={3}>
             {[...Array(12)].map((_, i) => (
@@ -963,7 +950,7 @@ const Products = () => {
           <>
             <Grid container spacing={3}>
               <AnimatePresence>
-                {getCurrentProducts().map((product, index) => (
+                {getCurrentProducts.map((product, index) => (
                   <Grid item xs={12} sm={6} md={4} lg={3} key={product._id} sx={{ display: 'flex' }}>
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
@@ -979,7 +966,6 @@ const Products = () => {
               </AnimatePresence>
             </Grid>
 
-            {/* Pagination */}
             {totalPages > 1 && (
               <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}>
                 <Pagination

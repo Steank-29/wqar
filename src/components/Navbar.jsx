@@ -25,7 +25,6 @@ import {
   Stack,
 } from '@mui/material';
 import {
-  Search as SearchIcon,
   Person as PersonIcon,
   ShoppingCart as ShoppingCartIcon,
   ChevronLeft as ChevronLeftIcon,
@@ -154,40 +153,7 @@ const SliderText = styled(Typography)({
   px: { xs: 1, sm: 0 },
 });
 
-const SearchContainer = styled(Box)(({ theme, isSticky }) => ({
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  backgroundColor: isSticky ? '#8C5A3C' : '#FFFFFF',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  zIndex: 1200,
-  padding: '0 24px',
-  boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-  direction: 'ltr',
-}));
 
-const SearchInput = styled(InputBase)(({ theme, isSticky }) => ({
-  width: '100%',
-  maxWidth: '600px',
-  fontSize: { xs: '18px', sm: '24px' },
-  fontFamily: 'Oswald, sans-serif',
-  fontWeight: 400,
-  letterSpacing: '0.5px',
-  color: isSticky ? '#FFFFFF' : '#8C5A3C',
-  '& .MuiInputBase-input': {
-    padding: '12px 0',
-    textAlign: 'center',
-    '&::placeholder': {
-      color: alpha(isSticky ? '#FFFFFF' : '#8C5A3C', 0.6),
-      fontSize: { xs: '16px', sm: '20px' },
-      fontFamily: 'Oswald, sans-serif',
-    },
-  },
-}));
 
 const MobileDrawer = styled(Drawer)(({ theme }) => ({
   '& .MuiDrawer-paper': {
@@ -211,11 +177,8 @@ const DrawerHeader = styled(Box)({
 
 const Navbar = () => {
   const [isSticky, setIsSticky] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [currentSlide, setCurrentSlide] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const searchInputRef = useRef(null);
   
   const { t } = useTranslation();
   const { isRTL, currentLanguage } = useLanguage();
@@ -259,11 +222,7 @@ const Navbar = () => {
     return () => clearInterval(interval);
   }, [sliderTexts.length]);
 
-  useEffect(() => {
-    if (showSearch && searchInputRef.current) {
-      searchInputRef.current.focus();
-    }
-  }, [showSearch]);
+
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % sliderTexts.length);
@@ -273,22 +232,8 @@ const Navbar = () => {
     setCurrentSlide((prev) => (prev - 1 + sliderTexts.length) % sliderTexts.length);
   };
 
-  const handleSearchOpen = () => {
-    setShowSearch(true);
-    setMobileMenuOpen(false);
-  };
 
-  const handleSearchClose = () => {
-    setShowSearch(false);
-    setSearchQuery('');
-  };
 
-  const handleSearchSubmit = (e) => {
-    if (e.key === 'Enter' && searchQuery.trim()) {
-      navigate(`/products?search=${searchQuery}`);
-      handleSearchClose();
-    }
-  };
 
   const handleLogin = () => {
     navigate('/login');
@@ -361,29 +306,6 @@ const Navbar = () => {
         
         <Divider sx={{ my: 2 }} />
         
-        <ListItem
-          onClick={() => {
-            setMobileMenuOpen(false);
-            handleSearchOpen();
-          }}
-          sx={{
-            '&:hover': {
-              backgroundColor: alpha('#8C5A3C', 0.1),
-            },
-          }}
-        >
-          <SearchIcon sx={{ color: '#8C5A3C', ml: isRTL ? 2 : 0, mr: isRTL ? 0 : 2 }} />
-          <ListItemText
-            primary={t('navbar.search')}
-            primaryTypographyProps={{
-              fontFamily: 'Oswald, sans-serif',
-              fontSize: '18px',
-              fontWeight: 500,
-              color: '#8C5A3C',
-              textAlign: isRTL ? 'right' : 'left',
-            }}
-          />
-        </ListItem>
 
         <ListItem>
           <Box sx={{ width: '100%', mt: 1 }}>
@@ -624,10 +546,10 @@ const Navbar = () => {
               {shippingCost === 0 && subtotal > 0 && (
                 <Stack direction="row" justifyContent="space-between">
                   <Typography variant="body2" sx={{ color: '#10B981', fontWeight: 500 }}>
-                    Free Shipping
+                    Shipping
                   </Typography>
                   <Typography variant="body2" sx={{ color: '#10B981', fontWeight: 500 }}>
-                    Included
+                    9 TND
                   </Typography>
                 </Stack>
               )}
@@ -802,11 +724,6 @@ const Navbar = () => {
             <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
               <LanguageSwitcher isSticky={isSticky} isMobile={false} />
               
-              {!isMobile && !isTablet && (
-                <IconButtonStyled isSticky={isSticky ? 1 : 0} onClick={handleSearchOpen}>
-                  <SearchIcon />
-                </IconButtonStyled>
-              )}
               
               {!isMobile && !isTablet && (
                 <IconButtonStyled isSticky={isSticky ? 1 : 0} onClick={handleLogin}>
@@ -824,40 +741,7 @@ const Navbar = () => {
           </Toolbar>
         </Container>
 
-        {/* Search Overlay */}
-        <AnimatePresence>
-          {showSearch && (
-            <Fade in={showSearch} timeout={300}>
-              <SearchContainer isSticky={isSticky ? 1 : 0}>
-                <ClickAwayListener onClickAway={handleSearchClose}>
-                  <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', position: 'relative' }}>
-                    <SearchInput
-                      inputRef={searchInputRef}
-                      placeholder={t('navbar.searchPlaceholder')}
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyPress={handleSearchSubmit}
-                      isSticky={isSticky ? 1 : 0}
-                      fullWidth
-                    />
-                    <IconButton
-                      sx={{
-                        position: 'absolute',
-                        [isRTL ? 'left' : 'right']: { xs: 0, sm: 20 },
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        color: isSticky ? '#FFFFFF' : '#8C5A3C',
-                      }}
-                      onClick={handleSearchClose}
-                    >
-                      <CloseIcon />
-                    </IconButton>
-                  </Box>
-                </ClickAwayListener>
-              </SearchContainer>
-            </Fade>
-          )}
-        </AnimatePresence>
+
       </StyledAppBar>
 
       {/* Mobile Drawer Menu */}

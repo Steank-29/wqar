@@ -42,7 +42,8 @@
     "title": "مواقعنا",
     "description": "زورونا في أحد متاجرنا في جميع أنحاء المدينة",
     "locations": "مواقع المتاجر",
-    "getDirections": "احصل على الاتجاهات"
+    "getDirections": "احصل على الاتجاهات",
+    "buyme":"اشتري الآن"
   },
   "productCard": {
     "freeShipping": "شحن مجاني • توصيل سريع",

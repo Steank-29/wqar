@@ -42,7 +42,8 @@
     "title": "Nos Boutiques",
     "description": "Visitez-nous dans l'une de nos boutiques à travers la ville",
     "locations": "Emplacements des Boutiques",
-    "getDirections": "Obtenir l'itinéraire"
+    "getDirections": "Obtenir l'itinéraire",
+    "buyme":"Achetez maintenant"
   },
   "productCard": {
     "freeShipping": "Livraison Gratuite • Express Disponible",

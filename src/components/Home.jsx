@@ -21,6 +21,8 @@ import {
   CircularProgress,
   useMediaQuery,
   useTheme,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -32,6 +34,7 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import ShoppingBagIcon from '@mui/icons-material/ShoppingBag';
+import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
@@ -48,6 +51,7 @@ import 'leaflet/dist/leaflet.css';
 
 // Import services
 import { getProducts } from '../services/productService';
+import { useCart } from '../context/CartContext';
 
 // Fix for default marker icons in Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -66,7 +70,7 @@ const storeLocations = [
     address: 'Sousse, Tunisie',
     addressAr: 'سوسة، تونس',
     addressFr: 'Sousse, Tunisie',
-    coordinates: [35.8254, 10.6370],
+    coordinates: [35.870433722707965, 10.53657815156325],
   },
 ];
 
@@ -150,7 +154,7 @@ const getAvailableSizes = (product) => {
   
   for (const size of sizes) {
     const price = getProductPrice(product, size);
-    if (price !== null && price !== undefined) {
+    if (price !== null && price !== undefined && price > 0) {
       availableSizes.push(size);
     }
   }
@@ -164,6 +168,8 @@ const Home = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { t } = useTranslation();
   const { isRTL, currentLanguage } = useLanguage();
+  const { addToCart } = useCart();
+  const [cartSnackbar, setCartSnackbar] = useState({ open: false, message: '', severity: 'success' });
   
   // State for real products
   const [products, setProducts] = useState({
@@ -210,6 +216,17 @@ const Home = () => {
     e.stopPropagation();
     setWishlisted(prev => ({ ...prev, [id]: !prev[id] }));
   };
+
+const handleAddToCart = (e, product, selectedSize, price) => {
+  e.stopPropagation();
+  addToCart(product, 1, selectedSize, price);
+  setCartSnackbar({ 
+    open: true, 
+    message: `${product.name} (${selectedSize}) - ${price} TND added to cart`, 
+    severity: 'success' 
+  });
+  setTimeout(() => setCartSnackbar({ open: false, message: '', severity: 'success' }), 2000);
+};
 
   // Loading skeleton
   if (loading) {
@@ -438,6 +455,7 @@ const Home = () => {
                       product={product}
                       wishlisted={wishlisted[product._id]}
                       onWishlist={(e) => toggleWishlist(e, product._id)}
+                      onAddToCart={handleAddToCart}
                       onClick={() => navigate(`/product/${product._id}`)}
                       isActive={index === activeIndex}
                       t={t}
@@ -575,6 +593,7 @@ const Home = () => {
                 product={product}
                 wishlisted={wishlisted[product._id]}
                 onWishlist={(e) => toggleWishlist(e, product._id)}
+                onAddToCart={handleAddToCart}
                 onClick={() => navigate(`/product/${product._id}`)}
                 isActive={false}
                 t={t}
@@ -627,6 +646,7 @@ const Home = () => {
                 product={product}
                 wishlisted={wishlisted[product._id]}
                 onWishlist={(e) => toggleWishlist(e, product._id)}
+                onAddToCart={handleAddToCart}
                 onClick={() => navigate(`/product/${product._id}`)}
                 isActive={false}
                 t={t}
@@ -679,6 +699,7 @@ const Home = () => {
                 product={product}
                 wishlisted={wishlisted[product._id]}
                 onWishlist={(e) => toggleWishlist(e, product._id)}
+                onAddToCart={handleAddToCart}
                 onClick={() => navigate(`/product/${product._id}`)}
                 isActive={false}
                 t={t}
@@ -839,16 +860,28 @@ const Home = () => {
           </Box>
         </Paper>
       </Container>
+            {/* Cart Snackbar */}
+<Snackbar
+  open={cartSnackbar.open}
+  autoHideDuration={2000}
+  onClose={() => setCartSnackbar({ ...cartSnackbar, open: false })}
+  anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+>
+  <Alert severity={cartSnackbar.severity} sx={{ borderRadius: '12px' }}>
+    {cartSnackbar.message}
+  </Alert>
+</Snackbar>
     </Box>
   );
 };
 
 /* ── PRODUCT CARD COMPONENT (UPDATED) ── */
-const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive, t, isRTL, currentLanguage, isMobile }) => {
+const ProductCard = ({ product, wishlisted, onWishlist, onAddToCart, onClick, isActive, t, isRTL, currentLanguage, isMobile }) => {
   const [hovered, setHovered] = useState(false);
   const [selectedSize, setSelectedSize] = useState(null);
   const [currentPrice, setCurrentPrice] = useState(null);
   const [availableSizes, setAvailableSizes] = useState([]);
+
 
   // Get available sizes and current price when product or selected size changes
   useEffect(() => {
@@ -938,6 +971,9 @@ const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive, t, is
     return null;
   }
 
+  // Split fragrance notes into array
+  const fragranceNotes = product.fragrance?.split(',').map(note => note.trim()) || [];
+
   return (
     <motion.div
       animate={{
@@ -997,42 +1033,8 @@ const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive, t, is
           </Paper>
         )}
 
-        {/* Wishlist Button */}
-        <Tooltip 
-          title={wishlisted ? t('productCard.removeFromWishlist') : t('productCard.addToWishlist')} 
-          placement="top" 
-          arrow
-        >
-          <IconButton
-            size="small"
-            onClick={onWishlist}
-            sx={{
-              position: 'absolute',
-              top: { xs: 12, md: 20 },
-              [isRTL ? 'left' : 'right']: { xs: 12, md: 20 },
-              zIndex: 3,
-              bgcolor: 'rgba(255,255,255,0.98)',
-              backdropFilter: 'blur(12px)',
-              width: { xs: 32, md: 40 },
-              height: { xs: 32, md: 40 },
-              transition: 'all 0.4s cubic-bezier(0.34, 1.2, 0.64, 1)',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-              borderRadius: '50%',
-              '&:hover': { 
-                transform: 'scale(1.12) rotate(5deg)', 
-                bgcolor: '#FFFFFF',
-                boxShadow: '0 8px 20px rgba(107, 68, 35, 0.25)',
-              },
-            }}
-          >
-            {wishlisted
-              ? <FavoriteIcon sx={{ fontSize: { xs: 16, md: 20 }, color: '#C4364A' }} />
-              : <FavoriteBorderIcon sx={{ fontSize: { xs: 16, md: 20 }, color: '#6B4423' }} />
-            }
-          </IconButton>
-        </Tooltip>
 
-        {/* Image Container */}
+        {/* Image Container - Fixed to show full image */}
         <Box
           sx={{
             position: 'relative',
@@ -1048,9 +1050,9 @@ const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive, t, is
             sx={{
               width: '100%',
               height: '100%',
-              objectFit: 'cover',
+              objectFit: 'contain',
               transition: 'transform 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-              transform: hovered ? 'scale(1.1)' : 'scale(1)',
+              transform: hovered ? 'scale(1.05)' : 'scale(1)',
             }}
             image={imageUrl}
             alt={product.name}
@@ -1060,7 +1062,7 @@ const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive, t, is
             }}
           />
 
-          {/* Overlay with fragrance notes - hide on mobile */}
+          {/* Overlay with fragrance notes as chips - hide on mobile */}
           {!isMobile && (
             <Fade in={hovered} timeout={400}>
               <Box
@@ -1069,37 +1071,34 @@ const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive, t, is
                   bottom: 0,
                   left: 0,
                   right: 0,
-                  p: 3,
+                  p: 2,
                   background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 60%, transparent 100%)',
                   backdropFilter: 'blur(2px)',
                 }}
               >
-                <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap>
-                  {product.fragrance?.split(',').slice(0, 3).map((note, idx) => (
+                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                  {fragranceNotes.slice(0, 3).map((note, idx) => (
                     <motion.div
                       key={note}
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.08, duration: 0.4 }}
                     >
-                      <Box
+                      <Chip
+                        label={note}
+                        size="small"
                         sx={{
                           fontFamily: 'Oswald, sans-serif',
-                          fontSize: '10px',
+                          fontSize: '9px',
                           fontWeight: 500,
                           letterSpacing: '0.1em',
-                          textTransform: 'uppercase',
                           color: '#FFFFFF',
                           background: alpha('#FFFFFF', 0.2),
                           backdropFilter: 'blur(8px)',
-                          px: 1.5,
-                          py: 0.8,
-                          borderRadius: '30px',
                           border: `1px solid ${alpha('#FFFFFF', 0.25)}`,
+                          '& .MuiChip-label': { px: 1 },
                         }}
-                      >
-                        {note.trim()}
-                      </Box>
+                      />
                     </motion.div>
                   ))}
                 </Stack>
@@ -1178,25 +1177,34 @@ const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive, t, is
             }}
           />
 
-          {/* Fragrance preview - hide on mobile */}
-          {!isMobile && (
-            <Typography
-              sx={{
-                fontFamily: 'Oswald, sans-serif',
-                fontWeight: 300,
-                fontSize: '12px',
-                color: alpha('#1A1A1A', 0.7),
-                lineHeight: 1.5,
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-                textAlign: isRTL ? 'right' : 'left',
-              }}
-            >
-              {product.fragrance}
-            </Typography>
-          )}
+          {/* Fragrance as chips - always visible */}
+          <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', mt: 0.5 }}>
+            {fragranceNotes.slice(0, isMobile ? 2 : 3).map((note, idx) => (
+              <Chip
+                key={idx}
+                label={note}
+                size="small"
+                variant="outlined"
+                sx={{
+                  fontSize: { xs: '8px', md: '10px' },
+                  fontFamily: 'Oswald, sans-serif',
+                  borderColor: alpha('#6B4423', 0.3),
+                  color: alpha('#1A1A1A', 0.7),
+                }}
+              />
+            ))}
+            {fragranceNotes.length > (isMobile ? 2 : 3) && (
+              <Chip
+                label={`+${fragranceNotes.length - (isMobile ? 2 : 3)}`}
+                size="small"
+                variant="outlined"
+                sx={{
+                  fontSize: { xs: '8px', md: '10px' },
+                  fontFamily: 'Oswald, sans-serif',
+                }}
+              />
+            )}
+          </Box>
 
           {/* Rating */}
           <Stack direction="row" alignItems="center" spacing={1}>
@@ -1211,12 +1219,11 @@ const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive, t, is
                 '& .MuiRating-icon': { fontSize: { xs: '14px', md: '18px' } },
               }}
             />
-           
           </Stack>
 
           {!isMobile && <Divider sx={{ borderColor: alpha('#6B4423', 0.1) }} />}
 
-          {/* Price Section - Using TND */}
+          {/* Price Section */}
           <Stack direction="row" alignItems="flex-end" justifyContent="space-between" sx={{ mt: { xs: 0, md: 0 } }}>
             <Box>
               <Stack direction="row" alignItems="baseline" spacing={1}>
@@ -1259,41 +1266,67 @@ const ProductCard = ({ product, wishlisted, onWishlist, onClick, isActive, t, is
                       color: '#2C6E61',
                     }}
                   >
-                    FREE SHIPPING
+                    24/7 SHIPPING 
                   </Typography>
                 </Stack>
               )}
             </Box>
 
-            {/* Add to Bag Button */}
-            <Tooltip title="Add to Cart" placement="top" arrow>
-              <Button
-                variant="contained"
-                disableElevation
-                size={isMobile ? "small" : "medium"}
-                sx={{
-                  bgcolor: '#1A1A1A',
-                  color: '#FFF8F0',
-                  borderRadius: '40px',
-                  fontFamily: 'Oswald, sans-serif',
-                  fontSize: { xs: '8px', md: '12px' },
-                  fontWeight: 700,
-                  letterSpacing: '0.12em',
-                  textTransform: 'uppercase',
-                  px: { xs: 1.5, md: 3 },
-                  py: { xs: 0.8, md: 1.2 },
-                  minWidth: { xs: '70px', md: '120px' },
-                  transition: 'all 0.4s cubic-bezier(0.34, 1.2, 0.64, 1)',
-                  '&:hover': {
+            {/* Action Buttons - Buy Now and Add to Cart */}
+            <Stack direction="row" spacing={1}>
+              {/* Add to Cart Button */}
+              <Tooltip title="Add to Cart" placement="top" arrow>
+                <IconButton
+                  onClick={(e) => onAddToCart(e, product, selectedSize, currentPrice)}
+                  sx={{
+                    bgcolor: '#1A1A1A',
+                    color: '#FFF8F0',
+                    borderRadius: '40px',
+                    width: { xs: 36, md: 48 },
+                    height: { xs: 36, md: 48 },
+                    transition: 'all 0.4s cubic-bezier(0.34, 1.2, 0.64, 1)',
+                    '&:hover': {
+                      bgcolor: '#6B4423',
+                      transform: 'translateY(-3px) scale(1.02)',
+                      boxShadow: '0 8px 20px rgba(107, 68, 35, 0.35)',
+                    },
+                  }}
+                >
+                  <AddShoppingCartIcon sx={{ fontSize: { xs: 18, md: 22 } }} />
+                </IconButton>
+              </Tooltip>
+
+              {/* Buy Now Button */}
+              <Tooltip title="Buy Now" placement="top" arrow>
+                <Button
+                  variant="contained"
+                  disableElevation
+                  size={isMobile ? "small" : "medium"}
+                  onClick={onClick}
+                  sx={{
                     bgcolor: '#6B4423',
-                    transform: 'translateY(-3px) scale(1.02)',
-                    boxShadow: '0 8px 20px rgba(107, 68, 35, 0.35)',
-                  },
-                }}
-              >
-                {isMobile ? 'BUY' : 'ADD TO CART'}
-              </Button>
-            </Tooltip>
+                    color: '#FFF8F0',
+                    borderRadius: '40px',
+                    fontFamily: 'Oswald, sans-serif',
+                    fontSize: { xs: '8px', md: '12px' },
+                    fontWeight: 700,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    px: { xs: 1.5, md: 3 },
+                    py: { xs: 0.8, md: 1.2 },
+                    minWidth: { xs: '70px', md: '100px' },
+                    transition: 'all 0.4s cubic-bezier(0.34, 1.2, 0.64, 1)',
+                    '&:hover': {
+                      bgcolor: '#5C3520',
+                      transform: 'translateY(-3px) scale(1.02)',
+                      boxShadow: '0 8px 20px rgba(107, 68, 35, 0.35)',
+                    },
+                  }}
+                >
+                 {t('storeLocator.buyme')}
+                </Button>
+              </Tooltip>
+            </Stack>
           </Stack>
 
           {/* Size Selector - show only sizes that have prices */}

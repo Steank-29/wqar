@@ -42,7 +42,8 @@
     "title": "Our Locations",
     "description": "Visit us at one of our boutique locations across the city",
     "locations": "Store Locations",
-    "getDirections": "Get Directions"
+    "getDirections": "Get Directions",
+    "buyme":"Buy Now"
   },
   "productCard": {
     "freeShipping": "Free Shipping • Express Available",

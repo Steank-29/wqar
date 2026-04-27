@@ -7,7 +7,7 @@ export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  const SHIPPING_COST = 9.00;
+  const SHIPPING_COST = 9;
   const TAX_RATE = 0;
 
   // Load cart from localStorage on mount
@@ -35,17 +35,49 @@ export const CartProvider = ({ children }) => {
     }
   }, [cart]);
 
-  const addToCart = (product, quantity = 1, selectedSize = null) => {
-    if (!product?._id || !product?.name || !product?.price) {
+  // Helper function to get product price for a specific size
+  const getProductPriceForSize = (product, size) => {
+    // Check prices object (new structure)
+    if (product.prices && product.prices[size]) {
+      return product.prices[size];
+    }
+    // Check currentPrices (from API response)
+    if (product.currentPrices && product.currentPrices[size]) {
+      return product.currentPrices[size];
+    }
+    // Fallback to discountedPrice or regular price
+    if (product.discountedPrice) {
+      return product.discountedPrice;
+    }
+    return product.price || 0;
+  };
+
+  const addToCart = (product, quantity = 1, selectedSize = '30ml', customPrice = null) => {
+    if (!product?._id || !product?.name) {
       console.error('Invalid product structure:', product);
       throw new Error('Invalid product data');
     }
+
+    // Get the correct price for the selected size
+    let currentPrice = customPrice;
+    if (!currentPrice) {
+      currentPrice = getProductPriceForSize(product, selectedSize);
+    }
+    
+    // If still no price, use discountedPrice or fallback
+    if (!currentPrice || currentPrice <= 0) {
+      currentPrice = product.discountedPrice || product.price || 0;
+    }
+
+    const originalPrice = product.prices?.[selectedSize] || product.price || currentPrice;
 
     setCart((prev) => {
       // Find existing item with same ID and same size
       const existingItemIndex = prev.findIndex(
         (item) => item._id === product._id && item.selectedSize === selectedSize
       );
+
+      const variantKey = `${product._id}-${selectedSize}`;
 
       if (existingItemIndex > -1) {
         // Update quantity of existing item
@@ -57,19 +89,19 @@ export const CartProvider = ({ children }) => {
         };
         return updatedCart;
       } else {
-        // Add new item with size
-        const currentPrice = product.discountedPrice || product.price;
+        // Add new item with correct size and price
         const newItem = {
           _id: product._id,
+          productId: product._id,
           name: product.name,
           price: currentPrice,
-          originalPrice: product.price,
-          mainImage: product.images?.[0]?.url || product.image,
+          originalPrice: originalPrice,
+          mainImage: product.images?.[0]?.url || product.image || null,
           quantity: quantity,
           selectedSize: selectedSize,
-          discount: product.discountPercentage || 0,
+          discount: product.discountedPrice ? Math.round(((originalPrice - currentPrice) / originalPrice) * 100) : 0,
           stock: product.stock,
-          variantKey: `${product._id}-${selectedSize || 'nosize'}`,
+          variantKey: variantKey,
         };
         return [...prev, newItem];
       }
@@ -116,9 +148,12 @@ export const CartProvider = ({ children }) => {
   );
 
   const tax = useMemo(() => subtotal * TAX_RATE, [subtotal]);
-  const shippingCost = SHIPPING_COST;
-  const total = useMemo(() => subtotal + shippingCost + tax, [subtotal]);
-  const totalNoTax = useMemo(() => subtotal + shippingCost, [subtotal]);
+  
+  // Free shipping on orders over 100 TND
+  const shippingCost = useMemo(() => subtotal >= 200 ? 0 : SHIPPING_COST, [subtotal]);
+  
+  const total = useMemo(() => subtotal + shippingCost + tax, [subtotal, shippingCost, tax]);
+  const totalNoTax = useMemo(() => subtotal + shippingCost, [subtotal, shippingCost]);
 
   const isInCart = useCallback((productId, size = null) => {
     return cart.some(item => 

@@ -53,11 +53,13 @@ import {
   Shield,
   CreditCard,
   LocalOffer,
+  AddShoppingCart,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../components/LanguageContext';
 import { useTranslation } from 'react-i18next';
 import { getProductById } from '../services/productService';
+import { useCart } from '../context/CartContext';
 
 const COLORS = {
   primary: '#8C5A3C',
@@ -94,17 +96,14 @@ const getFullImageUrl = (imagePath) => {
 const getProductPrice = (product, size) => {
   if (!product) return null;
   
-  // Check prices object (new structure)
   if (product.prices && product.prices[size]) {
     return product.prices[size];
   }
   
-  // Check currentPrices (from API response)
   if (product.currentPrices && product.currentPrices[size]) {
     return product.currentPrices[size];
   }
   
-  // Fallback to legacy price
   return product.price || null;
 };
 
@@ -117,7 +116,7 @@ const getAvailableSizes = (product) => {
   
   for (const size of sizes) {
     const price = getProductPrice(product, size);
-    if (price !== null && price !== undefined) {
+    if (price !== null && price !== undefined && price > 0) {
       availableSizes.push(size);
     }
   }
@@ -132,6 +131,7 @@ const ProductDetail = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { t } = useTranslation();
   const { isRTL, currentLanguage } = useLanguage();
+  const { addToCart } = useCart();
   
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -148,6 +148,7 @@ const ProductDetail = () => {
   const [orderNumber, setOrderNumber] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [cartSnackbar, setCartSnackbar] = useState({ open: false, message: '', severity: 'success' });
   
   const [orderForm, setOrderForm] = useState({
     fullName: '',
@@ -180,11 +181,9 @@ const ProductDetail = () => {
       const productData = response.data;
       setProduct(productData);
       
-      // Get available sizes with prices
       const sizes = getAvailableSizes(productData);
       setAvailableSizes(sizes);
       
-      // Set default selected size (first available size)
       if (sizes.length > 0) {
         setSelectedSize(sizes[0]);
         const price = getProductPrice(productData, sizes[0]);
@@ -203,6 +202,25 @@ const ProductDetail = () => {
     if (newQuantity >= 1 && newQuantity <= (product?.stock || 99)) {
       setQuantity(newQuantity);
     }
+  };
+
+  const handleAddToCart = () => {
+    if (!selectedSize) {
+      setSnackbar({ open: true, message: 'Please select a size', severity: 'error' });
+      return;
+    }
+    if (!currentPrice || currentPrice <= 0) {
+      setSnackbar({ open: true, message: 'Price not available for selected size', severity: 'error' });
+      return;
+    }
+    
+    addToCart(product, quantity, selectedSize, currentPrice);
+    setCartSnackbar({ 
+      open: true, 
+      message: `${product.name} (${selectedSize}) x${quantity} - ${currentPrice * quantity} TND added to cart`, 
+      severity: 'success' 
+    });
+    setTimeout(() => setCartSnackbar({ open: false, message: '' }), 2000);
   };
 
   const handleOrderFormChange = (field, value) => {
@@ -247,7 +265,6 @@ const ProductDetail = () => {
     try {
       const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
       
-      // Format order data to match your backend API structure
       const orderData = {
         items: [{
           productId: product._id,
@@ -341,7 +358,6 @@ const ProductDetail = () => {
     );
   }
 
-  // Calculate discount (if discountedPrice is set on product level)
   const discount = product.discountedPrice && currentPrice 
     ? Math.round(((currentPrice - product.discountedPrice) / currentPrice) * 100)
     : 0;
@@ -350,6 +366,9 @@ const ProductDetail = () => {
   const mainImage = product.images?.[activeImage]?.url 
     ? getFullImageUrl(product.images[activeImage].url)
     : '/placeholder-image.jpg';
+  
+  // Split fragrance notes into chips
+  const fragranceNotes = product.fragrance?.split(',').map(note => note.trim()) || [];
 
   return (
     <Box sx={{ bgcolor: COLORS.gray50, minHeight: '100vh' }}>
@@ -377,7 +396,6 @@ const ProductDetail = () => {
           {/* Product Images - Left Column */}
           <Grid item xs={12} md={6}>
             <Box sx={{ position: 'sticky', top: 100 }}>
-              {/* Main Image */}
               <Paper
                 elevation={0}
                 sx={{
@@ -417,7 +435,6 @@ const ProductDetail = () => {
                 />
               </Paper>
               
-              {/* Thumbnails */}
               {product.images && product.images.length > 1 && (
                 <Stack direction="row" spacing={1.5} sx={{ overflowX: 'auto', pb: 1, justifyContent: 'center' }}>
                   {product.images.map((img, idx) => (
@@ -499,9 +516,6 @@ const ProductDetail = () => {
             {/* Rating */}
             <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 2 }}>
               <Rating value={product.rating || 0} readOnly precision={0.5} size="small" />
-              <Typography variant="body2" sx={{ color: COLORS.gray600 }}>
-                {product.reviewCount || 0} reviews
-              </Typography>
               <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: COLORS.gray400 }} />
               <Chip
                 label={product.gender?.toUpperCase()}
@@ -510,7 +524,7 @@ const ProductDetail = () => {
               />
             </Stack>
 
-            {/* Price - Updated for multiple sizes */}
+            {/* Price */}
             <Box sx={{ mb: 3 }}>
               {discount > 0 ? (
                 <Stack direction="row" alignItems="baseline" spacing={2}>
@@ -571,8 +585,8 @@ const ProductDetail = () => {
 
             <Divider sx={{ my: 3 }} />
 
-            {/* Fragrance Notes */}
-            {product.fragrance && (
+            {/* Fragrance Notes - Display as Chips */}
+            {fragranceNotes.length > 0 && (
               <Box sx={{ mb: 3 }}>
                 <Typography 
                   variant="subtitle1" 
@@ -585,20 +599,27 @@ const ProductDetail = () => {
                 >
                   Fragrance Profile
                 </Typography>
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
-                    color: COLORS.gray600,
-                    fontFamily: 'Inter',
-                    lineHeight: 1.6,
-                  }}
-                >
-                  {product.fragrance}
-                </Typography>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  {fragranceNotes.map((note, idx) => (
+                    <Chip
+                      key={idx}
+                      label={note}
+                      sx={{
+                        bgcolor: alpha(COLORS.primary, 0.08),
+                        color: COLORS.primaryDark,
+                        fontWeight: 500,
+                        borderRadius: '30px',
+                        '&:hover': {
+                          bgcolor: alpha(COLORS.primary, 0.15),
+                        }
+                      }}
+                    />
+                  ))}
+                </Box>
               </Box>
             )}
 
-            {/* Size Selection - Only show sizes that have prices */}
+            {/* Size Selection */}
             {availableSizes.length > 0 && (
               <Box sx={{ mb: 3 }}>
                 <Typography 
@@ -701,8 +722,34 @@ const ProductDetail = () => {
               </Stack>
             </Box>
 
-            {/* Action Buttons */}
+            {/* Action Buttons - Add to Cart and Buy Now */}
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3 }}>
+              <Button
+                fullWidth
+                variant="outlined"
+                size="large"
+                startIcon={<AddShoppingCart />}
+                onClick={handleAddToCart}
+                disabled={isOutOfStock || !selectedSize || !currentPrice}
+                sx={{
+                  borderColor: COLORS.primary,
+                  color: COLORS.primary,
+                  borderRadius: '40px',
+                  py: 1.5,
+                  fontFamily: 'Oswald',
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  letterSpacing: '0.02em',
+                  textTransform: 'none',
+                  '&:hover': {
+                    borderColor: COLORS.primaryDark,
+                    bgcolor: alpha(COLORS.primary, 0.05),
+                  },
+                }}
+              >
+                Add to Cart
+              </Button>
+              
               <Button
                 fullWidth
                 variant="contained"
@@ -722,7 +769,7 @@ const ProductDetail = () => {
                   textTransform: 'none',
                 }}
               >
-                {isOutOfStock ? 'Out of Stock' : 'Buy Now'}
+                Buy Now
               </Button>
               
               <IconButton
@@ -757,7 +804,7 @@ const ProductDetail = () => {
                     Free Shipping
                   </Typography>
                   <Typography variant="caption" sx={{ color: COLORS.gray500, fontSize: '10px' }}>
-                    on orders over 100 TND
+                    on orders over 200 TND
                   </Typography>
                 </Paper>
               </Grid>
@@ -810,7 +857,6 @@ const ProductDetail = () => {
         <DialogContent sx={{ p: 3 }}>
           {!orderSuccess ? (
             <>
-              {/* Order Summary - Updated to show size-specific price */}
               <Card sx={{ mb: 3, bgcolor: COLORS.gray50, borderRadius: '16px', elevation: 0, border: `1px solid ${COLORS.gray200}` }}>
                 <CardContent sx={{ p: 2.5 }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, fontFamily: 'Oswald' }}>
@@ -834,14 +880,12 @@ const ProductDetail = () => {
                 </CardContent>
               </Card>
 
-              {/* Stepper */}
               <Stepper activeStep={orderStep} sx={{ mb: 3 }}>
                 <Step><StepLabel>Info</StepLabel></Step>
                 <Step><StepLabel>Address</StepLabel></Step>
                 <Step><StepLabel>Payment</StepLabel></Step>
               </Stepper>
 
-              {/* Step 1: Contact Info */}
               {orderStep === 0 && (
                 <Stack spacing={2}>
                   <TextField
@@ -873,7 +917,6 @@ const ProductDetail = () => {
                 </Stack>
               )}
 
-              {/* Step 2: Shipping Address */}
               {orderStep === 1 && (
                 <Stack spacing={2}>
                   <TextField
@@ -902,7 +945,6 @@ const ProductDetail = () => {
                 </Stack>
               )}
 
-              {/* Step 3: Payment */}
               {orderStep === 2 && (
                 <Stack spacing={2}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>Payment Method</Typography>
@@ -915,11 +957,6 @@ const ProductDetail = () => {
                       control={<Radio />} 
                       label="Cash on Delivery (Pay when you receive)" 
                       sx={{ mb: 1 }}
-                    />
-                    <FormControlLabel 
-                      value="bank_transfer" 
-                      control={<Radio />} 
-                      label="Bank Transfer (You will receive bank details)" 
                     />
                   </RadioGroup>
                   
@@ -989,7 +1026,7 @@ const ProductDetail = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Snackbar */}
+      {/* Snackbar for general notifications */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={4000}
@@ -998,6 +1035,18 @@ const ProductDetail = () => {
       >
         <Alert severity={snackbar.severity} sx={{ borderRadius: '12px' }}>
           {snackbar.message}
+        </Alert>
+      </Snackbar>
+
+      {/* Snackbar for Cart notifications */}
+      <Snackbar
+        open={cartSnackbar.open}
+        autoHideDuration={2000}
+        onClose={() => setCartSnackbar({ ...cartSnackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity={cartSnackbar.severity} sx={{ borderRadius: '12px' }}>
+          {cartSnackbar.message}
         </Alert>
       </Snackbar>
     </Box>
