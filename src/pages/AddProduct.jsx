@@ -142,6 +142,10 @@ const AddProduct = () => {
   const [orderBy, setOrderBy] = useState('createdAt');
   const [order, setOrder] = useState('desc');
   const [viewMode, setViewMode] = useState('table');
+  
+  // ✅ FIX: Add state for total products count from API
+  const [totalProductsCount, setTotalProductsCount] = useState(0);
+  
   const [stats, setStats] = useState({
     totalProducts: 0,
     totalValue30ml: 0,
@@ -205,7 +209,7 @@ const AddProduct = () => {
     loadStats();
   }, []);
 
-  // Load products with filters
+  // ✅ FIXED: Load products with filters and proper pagination
   const loadProducts = async () => {
     setLoading(true);
     try {
@@ -223,7 +227,24 @@ const AddProduct = () => {
       params.append('order', order);
 
       const response = await axiosInstance.get(`/products?${params}`);
+      
+      // Debug logging
+      console.log('API Response:', {
+        dataLength: response.data.data?.length,
+        totalItems: response.data.pagination?.totalItems,
+        pagination: response.data.pagination,
+        currentPage: page + 1,
+        limit: rowsPerPage
+      });
+      
       setProducts(response.data.data || []);
+      
+      // ✅ FIX: Get total count from pagination response
+      const totalItems = response.data.pagination?.totalItems || 
+                         response.data.data?.length || 
+                         0;
+      setTotalProductsCount(totalItems);
+      
     } catch (error) {
       console.error('Error loading products:', error);
       setSnackbar({ 
@@ -254,36 +275,35 @@ const AddProduct = () => {
   };
 
   // Validate prices
-// Validate prices - UPDATED
-const validatePrices = () => {
-  const price30 = parseFloat(formData.prices['30ml']);
-  const price50 = parseFloat(formData.prices['50ml']);
-  const price100 = parseFloat(formData.prices['100ml']);
+  const validatePrices = () => {
+    const price30 = parseFloat(formData.prices['30ml']);
+    const price50 = parseFloat(formData.prices['50ml']);
+    const price100 = parseFloat(formData.prices['100ml']);
 
-  console.log('Validating prices:', { price30, price50, price100 });
+    console.log('Validating prices:', { price30, price50, price100 });
 
-  if (isNaN(price30) || price30 <= 0) {
-    setSnackbar({ open: true, message: 'Please enter a valid price for 30ml', severity: 'error' });
-    return false;
-  }
-  if (isNaN(price50) || price50 <= 0) {
-    setSnackbar({ open: true, message: 'Please enter a valid price for 50ml', severity: 'error' });
-    return false;
-  }
-  if (isNaN(price100) || price100 <= 0) {
-    setSnackbar({ open: true, message: 'Please enter a valid price for 100ml', severity: 'error' });
-    return false;
-  }
-  if (price50 <= price30) {
-    setSnackbar({ open: true, message: '50ml price must be greater than 30ml price', severity: 'error' });
-    return false;
-  }
-  if (price100 <= price50) {
-    setSnackbar({ open: true, message: '100ml price must be greater than 50ml price', severity: 'error' });
-    return false;
-  }
-  return true;
-};
+    if (isNaN(price30) || price30 <= 0) {
+      setSnackbar({ open: true, message: 'Please enter a valid price for 30ml', severity: 'error' });
+      return false;
+    }
+    if (isNaN(price50) || price50 <= 0) {
+      setSnackbar({ open: true, message: 'Please enter a valid price for 50ml', severity: 'error' });
+      return false;
+    }
+    if (isNaN(price100) || price100 <= 0) {
+      setSnackbar({ open: true, message: 'Please enter a valid price for 100ml', severity: 'error' });
+      return false;
+    }
+    if (price50 <= price30) {
+      setSnackbar({ open: true, message: '50ml price must be greater than 30ml price', severity: 'error' });
+      return false;
+    }
+    if (price100 <= price50) {
+      setSnackbar({ open: true, message: '100ml price must be greater than 50ml price', severity: 'error' });
+      return false;
+    }
+    return true;
+  };
 
   // Handle form input changes
   const handleInputChange = (e) => {
@@ -324,56 +344,55 @@ const validatePrices = () => {
   };
 
   // Create form data for API
-// Create form data for API - FIXED VERSION
-const createFormData = () => {
-  const formDataToSend = new FormData();
-  
-  // Add all text fields
-  formDataToSend.append('name', formData.name);
-  formDataToSend.append('fragrance', formData.fragrance);
-  formDataToSend.append('quantity', JSON.stringify(formData.quantity));
-  formDataToSend.append('stock', formData.stock);
-  formDataToSend.append('gender', formData.gender);
-  
-  // IMPORTANT FIX: Send prices as a JSON string
-  const pricesObject = {
-    '30ml': parseFloat(formData.prices['30ml']),
-    '50ml': parseFloat(formData.prices['50ml']),
-    '100ml': parseFloat(formData.prices['100ml'])
+  const createFormData = () => {
+    const formDataToSend = new FormData();
+    
+    // Add all text fields
+    formDataToSend.append('name', formData.name);
+    formDataToSend.append('fragrance', formData.fragrance);
+    formDataToSend.append('quantity', JSON.stringify(formData.quantity));
+    formDataToSend.append('stock', formData.stock);
+    formDataToSend.append('gender', formData.gender);
+    
+    // IMPORTANT FIX: Send prices as a JSON string
+    const pricesObject = {
+      '30ml': parseFloat(formData.prices['30ml']),
+      '50ml': parseFloat(formData.prices['50ml']),
+      '100ml': parseFloat(formData.prices['100ml'])
+    };
+    formDataToSend.append('prices', JSON.stringify(pricesObject));
+    
+    // Add other fields if they exist
+    if (formData.discountedPrice && formData.discountedPrice !== '') {
+      formDataToSend.append('discountedPrice', parseFloat(formData.discountedPrice));
+    }
+    if (formData.description && formData.description !== '') {
+      formDataToSend.append('description', formData.description);
+    }
+    formDataToSend.append('rating', parseFloat(formData.rating) || 0);
+    formDataToSend.append('featured', formData.featured);
+    formDataToSend.append('inStock', formData.inStock);
+    formDataToSend.append('tags', JSON.stringify(formData.tags));
+    formDataToSend.append('category', formData.category);
+    
+    // Add images
+    images.forEach(image => {
+      formDataToSend.append('images', image.file);
+    });
+    
+    // Add replaceImages flag for updates
+    if (editProduct && images.length > 0) {
+      formDataToSend.append('replaceImages', 'true');
+    }
+    
+    // Log what we're sending for debugging
+    console.log('Sending form data:');
+    for (let pair of formDataToSend.entries()) {
+      console.log(pair[0], pair[1]);
+    }
+    
+    return formDataToSend;
   };
-  formDataToSend.append('prices', JSON.stringify(pricesObject));
-  
-  // Add other fields if they exist
-  if (formData.discountedPrice && formData.discountedPrice !== '') {
-    formDataToSend.append('discountedPrice', parseFloat(formData.discountedPrice));
-  }
-  if (formData.description && formData.description !== '') {
-    formDataToSend.append('description', formData.description);
-  }
-  formDataToSend.append('rating', parseFloat(formData.rating) || 0);
-  formDataToSend.append('featured', formData.featured);
-  formDataToSend.append('inStock', formData.inStock);
-  formDataToSend.append('tags', JSON.stringify(formData.tags));
-  formDataToSend.append('category', formData.category);
-  
-  // Add images
-  images.forEach(image => {
-    formDataToSend.append('images', image.file);
-  });
-  
-  // Add replaceImages flag for updates
-  if (editProduct && images.length > 0) {
-    formDataToSend.append('replaceImages', 'true');
-  }
-  
-  // Log what we're sending for debugging
-  console.log('Sending form data:');
-  for (let pair of formDataToSend.entries()) {
-    console.log(pair[0], pair[1]);
-  }
-  
-  return formDataToSend;
-};
 
   // Handle product save (Create/Update)
   const handleSaveProduct = async () => {
@@ -658,7 +677,6 @@ const createFormData = () => {
                 </Typography>
                 {product.featured && <Chip label="Featured" size="small" sx={{ mt: 0.5, fontSize: 10, bgcolor: `${COLORS.warning}15`, color: COLORS.warning }} />}
               </TableCell>
-              {/* Fragrance as individual chips */}
               <TableCell>
                 <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
                   {product.fragrance?.split(',').map((note, idx) => (
@@ -736,11 +754,14 @@ const createFormData = () => {
             <TablePagination
               rowsPerPageOptions={[5, 10, 25, 50]}
               colSpan={9}
-              count={products.length}
+              count={totalProductsCount}
               rowsPerPage={rowsPerPage}
               page={page}
               onPageChange={(e, newPage) => setPage(newPage)}
-              onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
+              onRowsPerPageChange={(e) => { 
+                setRowsPerPage(parseInt(e.target.value, 10)); 
+                setPage(0); 
+              }}
             />
           </TableRow>
         </TableFooter>
@@ -750,112 +771,116 @@ const createFormData = () => {
 
   // Product Grid View - UPDATED with fragrance chips
   const ProductGridView = () => (
-    <Grid container spacing={3}>
-      {products.map((product, index) => {
-        const price30 = product.prices?.['30ml'] || 0;
-        const hasDiscount = product.discountedPrice && product.discountedPrice < price30;
-        
-        return (
-          <Grid item xs={12} sm={6} md={4} lg={3} key={product._id}>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-            >
-              <Card sx={{ borderRadius: '16px', overflow: 'hidden', cursor: 'pointer', '&:hover': { transform: 'translateY(-4px)', transition: '0.3s' } }}>
-                <Box sx={{ position: 'relative' }}>
-                  <CardMedia 
-                    component="img" 
-                    height="200" 
-                    image={product.images && product.images[0] ? getImageUrl(product.images[0].url) : '/placeholder-image.jpg'}
-                    alt={product.name}
-                    onError={(e) => {
-                      e.target.src = '/placeholder-image.jpg';
-                    }}
-                  />
-                  {hasDiscount && (
-                    <Chip
-                      label={`-${Math.round(((price30 - product.discountedPrice) / price30) * 100)}%`}
-                      size="small"
-                      sx={{ position: 'absolute', top: 10, right: 10, bgcolor: COLORS.error, color: COLORS.white }}
+    <>
+      <Grid container spacing={3}>
+        {products.map((product, index) => {
+          const price30 = product.prices?.['30ml'] || 0;
+          const hasDiscount = product.discountedPrice && product.discountedPrice < price30;
+          
+          return (
+            <Grid item xs={12} sm={6} md={4} lg={3} key={product._id}>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+              >
+                <Card sx={{ borderRadius: '16px', overflow: 'hidden', cursor: 'pointer', '&:hover': { transform: 'translateY(-4px)', transition: '0.3s' } }}>
+                  <Box sx={{ position: 'relative' }}>
+                    <CardMedia 
+                      component="img" 
+                      height="200" 
+                      image={product.images && product.images[0] ? getImageUrl(product.images[0].url) : '/placeholder-image.jpg'}
+                      alt={product.name}
+                      onError={(e) => {
+                        e.target.src = '/placeholder-image.jpg';
+                      }}
                     />
-                  )}
-                  {product.featured && (
-                    <Chip label="Featured" size="small" sx={{ position: 'absolute', top: 10, left: 10, bgcolor: COLORS.warning, color: COLORS.white }} />
-                  )}
-                </Box>
-                <CardContent>
-                  <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1rem', mb: 1 }}>{product.name}</Typography>
-                  
-                  {/* Fragrance as individual chips in grid view */}
-                  <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 1 }}>
-                    {product.fragrance?.split(',').map((note, idx) => (
-                      <Chip 
-                        key={idx} 
-                        label={note.trim()} 
-                        size="small" 
-                        variant="outlined"
-                        sx={{ fontSize: '10px' }}
+                    {hasDiscount && (
+                      <Chip
+                        label={`-${Math.round(((price30 - product.discountedPrice) / price30) * 100)}%`}
+                        size="small"
+                        sx={{ position: 'absolute', top: 10, right: 10, bgcolor: COLORS.error, color: COLORS.white }}
                       />
-                    ))}
+                    )}
+                    {product.featured && (
+                      <Chip label="Featured" size="small" sx={{ position: 'absolute', top: 10, left: 10, bgcolor: COLORS.warning, color: COLORS.white }} />
+                    )}
                   </Box>
-                  
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                    <Rating value={product.rating} precision={0.5} size="small" readOnly />
-                    <Typography variant="caption">({product.rating})</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                    <Box>
-                      {hasDiscount ? (
-                        <>
-                          <Typography variant="h6" sx={{ fontWeight: 700, color: COLORS.primary }}>{product.discountedPrice} TND</Typography>
-                          <Typography variant="caption" sx={{ textDecoration: 'line-through', color: COLORS.gray500 }}>{price30} TND</Typography>
-                        </>
-                      ) : (
-                        <Typography variant="h6" sx={{ fontWeight: 700, color: COLORS.primary }}>{price30} TND</Typography>
-                      )}
+                  <CardContent>
+                    <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1rem', mb: 1 }}>{product.name}</Typography>
+                    
+                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 1 }}>
+                      {product.fragrance?.split(',').map((note, idx) => (
+                        <Chip 
+                          key={idx} 
+                          label={note.trim()} 
+                          size="small" 
+                          variant="outlined"
+                          sx={{ fontSize: '10px' }}
+                        />
+                      ))}
                     </Box>
-                    <Chip label={`${product.stock} left`} size="small" sx={{ bgcolor: product.stock < 20 ? `${COLORS.error}15` : `${COLORS.success}15`, color: product.stock < 20 ? COLORS.error : COLORS.success }} />
-                  </Box>
-                  {product.prices && (
-                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 1 }}>
-                      <Chip label={`30ml: ${product.prices['30ml']} TND`} size="small" variant="outlined" sx={{ fontSize: 9 }} />
-                      <Chip label={`50ml: ${product.prices['50ml']} TND`} size="small" variant="outlined" sx={{ fontSize: 9 }} />
-                      <Chip label={`100ml: ${product.prices['100ml']} TND`} size="small" variant="outlined" sx={{ fontSize: 9 }} />
+                    
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                      <Rating value={product.rating} precision={0.5} size="small" readOnly />
+                      <Typography variant="caption">({product.rating})</Typography>
                     </Box>
-                  )}
-                </CardContent>
-                <Box sx={{ p: 2, pt: 0, display: 'flex', gap: 1 }}>
-                  <Button size="small" variant="outlined" fullWidth onClick={() => handleViewProduct(product)}>View</Button>
-                  <Button size="small" variant="outlined" fullWidth onClick={() => handleEditProduct(product)}>Edit</Button>
-                  <Button size="small" variant="outlined" color="error" fullWidth onClick={() => { setSelectedProduct(product); setDeleteDialog(true); }}>Delete</Button>
-                </Box>
-              </Card>
-            </motion.div>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                      <Box>
+                        {hasDiscount ? (
+                          <>
+                            <Typography variant="h6" sx={{ fontWeight: 700, color: COLORS.primary }}>{product.discountedPrice} TND</Typography>
+                            <Typography variant="caption" sx={{ textDecoration: 'line-through', color: COLORS.gray500 }}>{price30} TND</Typography>
+                          </>
+                        ) : (
+                          <Typography variant="h6" sx={{ fontWeight: 700, color: COLORS.primary }}>{price30} TND</Typography>
+                        )}
+                      </Box>
+                      <Chip label={`${product.stock} left`} size="small" sx={{ bgcolor: product.stock < 20 ? `${COLORS.error}15` : `${COLORS.success}15`, color: product.stock < 20 ? COLORS.error : COLORS.success }} />
+                    </Box>
+                    {product.prices && (
+                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 1 }}>
+                        <Chip label={`30ml: ${product.prices['30ml']} TND`} size="small" variant="outlined" sx={{ fontSize: 9 }} />
+                        <Chip label={`50ml: ${product.prices['50ml']} TND`} size="small" variant="outlined" sx={{ fontSize: 9 }} />
+                        <Chip label={`100ml: ${product.prices['100ml']} TND`} size="small" variant="outlined" sx={{ fontSize: 9 }} />
+                      </Box>
+                    )}
+                  </CardContent>
+                  <Box sx={{ p: 2, pt: 0, display: 'flex', gap: 1 }}>
+                    <Button size="small" variant="outlined" fullWidth onClick={() => handleViewProduct(product)}>View</Button>
+                    <Button size="small" variant="outlined" fullWidth onClick={() => handleEditProduct(product)}>Edit</Button>
+                    <Button size="small" variant="outlined" color="error" fullWidth onClick={() => { setSelectedProduct(product); setDeleteDialog(true); }}>Delete</Button>
+                  </Box>
+                </Card>
+              </motion.div>
+            </Grid>
+          );
+        })}
+        {products.length === 0 && (
+          <Grid item xs={12}>
+            <Box sx={{ textAlign: 'center', py: 8 }}>
+              <Typography variant="h6" sx={{ color: COLORS.gray500 }}>No products found</Typography>
+            </Box>
           </Grid>
-        );
-      })}
-      {products.length === 0 && (
-        <Grid item xs={12}>
-          <Box sx={{ textAlign: 'center', py: 8 }}>
-            <Typography variant="h6" sx={{ color: COLORS.gray500 }}>No products found</Typography>
-          </Box>
-        </Grid>
-      )}
-      <Grid item xs={12}>
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-          <TablePagination
-            rowsPerPageOptions={[5, 10, 25, 50]}
-            component="div"
-            count={products.length}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={(e, newPage) => setPage(newPage)}
-            onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
-          />
-        </Box>
+        )}
       </Grid>
-    </Grid>
+      
+      {/* ✅ FIXED: Grid view pagination */}
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          component="div"
+          count={totalProductsCount}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={(e, newPage) => setPage(newPage)}
+          onRowsPerPageChange={(e) => { 
+            setRowsPerPage(parseInt(e.target.value, 10)); 
+            setPage(0); 
+          }}
+        />
+      </Box>
+    </>
   );
 
   return (
@@ -1039,7 +1064,6 @@ const createFormData = () => {
         <DialogContent sx={{ p: 3 }}>
           {selectedProduct && (
             <Box>
-              {/* Product Images */}
               {selectedProduct.images && selectedProduct.images.length > 0 && (
                 <Box sx={{ mb: 3 }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>Images</Typography>
@@ -1059,7 +1083,6 @@ const createFormData = () => {
 
               <Divider sx={{ my: 2 }} />
 
-              {/* Product Information */}
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="caption" color="textSecondary">Product Name</Typography>
@@ -1167,7 +1190,6 @@ const createFormData = () => {
         </DialogTitle>
         <DialogContent sx={{ p: 3 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            {/* Product Image Upload Section */}
             <Box>
               <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
                 <ImageIcon /> Product Images
@@ -1210,7 +1232,6 @@ const createFormData = () => {
 
             <Divider />
 
-            {/* Product Basic Information */}
             <Box>
               <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>Basic Information</Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -1260,7 +1281,6 @@ const createFormData = () => {
 
             <Divider />
 
-            {/* Pricing & Stock - NO DEFAULTS */}
             <Box>
               <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>Pricing & Inventory</Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -1358,7 +1378,6 @@ const createFormData = () => {
 
             <Divider />
 
-            {/* Classification */}
             <Box>
               <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>Classification</Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>

@@ -957,7 +957,7 @@ const Checkout = () => {
                           {total.toFixed(2)} TND
                         </Typography>
                         <Typography variant="caption" sx={{ color: COLORS.gray500 }}>
-                          Including VAT
+                          TVA
                         </Typography>
                       </Box>
                     </Stack>
