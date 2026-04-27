@@ -345,8 +345,13 @@ const AddProduct = () => {
     
     // Add images
     images.forEach(image => {
-      formDataToSend.append('replaceImages', 'true');
+      formDataToSend.append('images', image.file);
     });
+    
+    // Add replaceImages flag for updates
+    if (editProduct && images.length > 0) {
+      formDataToSend.append('replaceImages', 'true');
+    }
     
     return formDataToSend;
   };
@@ -543,6 +548,8 @@ const AddProduct = () => {
     if (product.images && product.images.length > 0) {
       const imageUrls = product.images.map(img => getImageUrl(img.url));
       setPreviewImages(imageUrls);
+      // Also set the images state for editing
+      setImages([]); // Reset images state, existing images are already on server
     }
     setOpenDialog(true);
   };
@@ -585,7 +592,7 @@ const AddProduct = () => {
     loadProducts();
   }, [page, rowsPerPage]);
 
-  // Product Table View
+  // Product Table View - UPDATED with fragrance chips
   const ProductTableView = () => (
     <TableContainer id="product-table">
       <Table>
@@ -597,7 +604,7 @@ const AddProduct = () => {
                 Product Name
               </TableSortLabel>
             </TableCell>
-            <TableCell>Fragrance</TableCell>
+            <TableCell>Fragrance Notes</TableCell>
             <TableCell>Sizes</TableCell>
             <TableCell align="right">
               <TableSortLabel active={orderBy === 'stock'} direction={order} onClick={() => handleSort('stock')}>
@@ -632,7 +639,20 @@ const AddProduct = () => {
                 </Typography>
                 {product.featured && <Chip label="Featured" size="small" sx={{ mt: 0.5, fontSize: 10, bgcolor: `${COLORS.warning}15`, color: COLORS.warning }} />}
               </TableCell>
-              <TableCell>{product.fragrance}</TableCell>
+              {/* Fragrance as individual chips */}
+              <TableCell>
+                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                  {product.fragrance?.split(',').map((note, idx) => (
+                    <Chip 
+                      key={idx} 
+                      label={note.trim()} 
+                      size="small" 
+                      variant="outlined"
+                      sx={{ fontSize: '11px' }}
+                    />
+                  ))}
+                </Box>
+              </TableCell>
               <TableCell>
                 <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
                   {product.quantity?.map((q) => (
@@ -709,7 +729,7 @@ const AddProduct = () => {
     </TableContainer>
   );
 
-  // Product Grid View
+  // Product Grid View - UPDATED with fragrance chips
   const ProductGridView = () => (
     <Grid container spacing={3}>
       {products.map((product, index) => {
@@ -747,7 +767,20 @@ const AddProduct = () => {
                 </Box>
                 <CardContent>
                   <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1rem', mb: 1 }}>{product.name}</Typography>
-                  <Typography variant="body2" sx={{ color: COLORS.gray600, mb: 1 }}>{product.fragrance}</Typography>
+                  
+                  {/* Fragrance as individual chips in grid view */}
+                  <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 1 }}>
+                    {product.fragrance?.split(',').map((note, idx) => (
+                      <Chip 
+                        key={idx} 
+                        label={note.trim()} 
+                        size="small" 
+                        variant="outlined"
+                        sx={{ fontSize: '10px' }}
+                      />
+                    ))}
+                  </Box>
+                  
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                     <Rating value={product.rating} precision={0.5} size="small" readOnly />
                     <Typography variant="caption">({product.rating})</Typography>
@@ -1015,7 +1048,11 @@ const AddProduct = () => {
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="caption" color="textSecondary">Fragrance Notes</Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 600, mb: 2 }}>{selectedProduct.fragrance}</Typography>
+                  <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 2 }}>
+                    {selectedProduct.fragrance?.split(',').map((note, idx) => (
+                      <Chip key={idx} label={note.trim()} size="small" variant="outlined" />
+                    ))}
+                  </Box>
                 </Grid>
                 <Grid item xs={12}>
                   <Typography variant="caption" color="textSecondary">Prices</Typography>
@@ -1093,7 +1130,7 @@ const AddProduct = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Add/Edit Product Dialog - UPDATED with no defaults */}
+      {/* Add/Edit Product Dialog */}
       <Dialog 
         open={openDialog} 
         onClose={() => setOpenDialog(false)} 
