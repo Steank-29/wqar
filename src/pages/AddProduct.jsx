@@ -151,25 +151,25 @@ const AddProduct = () => {
   });
 
   // Product Form State - NO DEFAULTS, all prices required
-const [formData, setFormData] = useState({
-  name: '',
-  fragrance: '',
-  quantity: [],
-  stock: '',
-  gender: 'unisex',
-  prices: {
-    '30ml': '',
-    '50ml': '',
-    '100ml': ''
-  },
-  discountedPrice: '', // ← Keep as empty string, not '0'
-  description: '',
-  rating: 0,
-  featured: false,
-  inStock: true,
-  tags: [],
-  category: 'Perfumes',
-});
+  const [formData, setFormData] = useState({
+    name: '',
+    fragrance: '',
+    quantity: [],
+    stock: '',
+    gender: 'unisex',
+    prices: {
+      '30ml': '',
+      '50ml': '',
+      '100ml': ''
+    },
+    discountedPrice: '',
+    description: '',
+    rating: 0,
+    featured: false,
+    inStock: true,
+    tags: [],
+    category: 'Perfumes',
+  });
 
   const [images, setImages] = useState([]);
   const [previewImages, setPreviewImages] = useState([]);
@@ -325,7 +325,6 @@ const validatePrices = () => {
 
   // Create form data for API
 // Create form data for API - FIXED VERSION
-// Create form data for API - FIXED VERSION
 const createFormData = () => {
   const formDataToSend = new FormData();
   
@@ -336,7 +335,7 @@ const createFormData = () => {
   formDataToSend.append('stock', formData.stock);
   formDataToSend.append('gender', formData.gender);
   
-  // Send prices as a JSON string
+  // IMPORTANT FIX: Send prices as a JSON string
   const pricesObject = {
     '30ml': parseFloat(formData.prices['30ml']),
     '50ml': parseFloat(formData.prices['50ml']),
@@ -344,13 +343,10 @@ const createFormData = () => {
   };
   formDataToSend.append('prices', JSON.stringify(pricesObject));
   
-  // CRITICAL FIX: Only append discountedPrice if it has a value AND it's greater than 0
-  const discountedPriceValue = parseFloat(formData.discountedPrice);
-  if (formData.discountedPrice && formData.discountedPrice !== '' && !isNaN(discountedPriceValue) && discountedPriceValue > 0) {
-    formDataToSend.append('discountedPrice', discountedPriceValue);
+  // Add other fields if they exist
+  if (formData.discountedPrice && formData.discountedPrice !== '') {
+    formDataToSend.append('discountedPrice', parseFloat(formData.discountedPrice));
   }
-  // DO NOT send discountedPrice if it's 0, null, or empty
-  
   if (formData.description && formData.description !== '') {
     formDataToSend.append('description', formData.description);
   }
