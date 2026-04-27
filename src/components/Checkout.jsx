@@ -439,11 +439,11 @@ const Checkout = () => {
             </Stack>
             <Stack direction="row" alignItems="center" spacing={1}>
               <WhatsApp sx={{ fontSize: 18, color: '#25D366' }} />
-              <Typography variant="caption" sx={{ fontWeight: 500 }}>+216 XX XXX XXX</Typography>
+              <Typography variant="caption" sx={{ fontWeight: 500 }}>+216 27 787 552</Typography>
             </Stack>
             <Stack direction="row" alignItems="center" spacing={1}>
               <Email sx={{ fontSize: 18, color: COLORS.secondary }} />
-              <Typography variant="caption" sx={{ fontWeight: 500 }}>support@company.com</Typography>
+              <Typography variant="caption" sx={{ fontWeight: 500 }}>Dardourirayen561@gmail.com</Typography>
             </Stack>
           </Stack>
         </Container>
@@ -1034,15 +1034,15 @@ const Checkout = () => {
                     <Stack spacing={1} alignItems="center">
                       <Stack direction="row" alignItems="center" spacing={1}>
                         <WhatsApp sx={{ fontSize: 18, color: '#25D366' }} />
-                        <Typography variant="body2">WhatsApp: +216 XX XXX XXX</Typography>
+                        <Typography variant="body2">WhatsApp: +216 27 787 552</Typography>
                       </Stack>
                       <Stack direction="row" alignItems="center" spacing={1}>
                         <Phone sx={{ fontSize: 18, color: COLORS.gray700 }} />
-                        <Typography variant="body2">Call: +216 XX XXX XXX</Typography>
+                        <Typography variant="body2">Call: +216 27 787 552</Typography>
                       </Stack>
                       <Stack direction="row" alignItems="center" spacing={1}>
                         <Email sx={{ fontSize: 18, color: COLORS.gray700 }} />
-                        <Typography variant="body2">Email: support@company.com</Typography>
+                        <Typography variant="body2">Email: Dardourirayen561@gmail.com</Typography>
                       </Stack>
                     </Stack>
                   </Box>

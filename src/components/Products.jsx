@@ -341,10 +341,13 @@ const Products = () => {
             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             height: '100%',
             minHeight: isMobile ? 480 : 520,
+            maxWidth: isMobile ? '100%' : 'auto',
+            margin: '0 auto',
             display: 'flex',
             flexDirection: 'column',
             position: 'relative',
             cursor: 'pointer',
+            width: '100%',
             '&:hover': {
               transform: isMobile ? 'translateY(-4px)' : 'translateY(-8px)',
               boxShadow: '0 20px 40px rgba(0,0,0,0.12)',
@@ -370,25 +373,6 @@ const Products = () => {
               />
             )}
           </Box>
-
-          {/* Wishlist Button */}
-          <IconButton
-            onClick={(e) => toggleWishlist(e, product._id)}
-            sx={{
-              position: 'absolute',
-              top: 12,
-              right: 12,
-              zIndex: 2,
-              bgcolor: 'rgba(255,255,255,0.95)',
-              backdropFilter: 'blur(4px)',
-              width: isMobile ? 32 : 36,
-              height: isMobile ? 32 : 36,
-              '&:hover': { bgcolor: COLORS.white, transform: 'scale(1.1)' },
-              transition: 'transform 0.2s',
-            }}
-          >
-            {wishlist[product._id] ? <Favorite sx={{ color: COLORS.error, fontSize: isMobile ? 16 : 18 }} /> : <FavoriteBorder sx={{ fontSize: isMobile ? 16 : 18 }} />}
-          </IconButton>
 
           {/* Image Container */}
           <Box 
@@ -478,6 +462,7 @@ const Products = () => {
                 WebkitBoxOrient: 'vertical',
                 overflow: 'hidden',
                 minHeight: isMobile ? '44px' : '48px',
+                textAlign: 'center',
               }}
             >
               {product.name}
@@ -485,7 +470,7 @@ const Products = () => {
 
             {/* Fragrance Notes as Chips - NEW */}
             {fragranceNotes.length > 0 && (
-              <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 1, minHeight: '40px' }}>
+              <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 1, minHeight: '40px', justifyContent: 'center' }}>
                 {fragranceNotes.slice(0, 3).map((note, idx) => (
                   <Chip
                     key={idx}
@@ -517,7 +502,7 @@ const Products = () => {
             )}
 
             {/* Rating */}
-            <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 1.5, minHeight: '28px' }}>
+            <Stack direction="row" alignItems="center" justifyContent="center" spacing={0.75} sx={{ mb: 1.5, minHeight: '28px' }}>
               <Rating value={product.rating || 0} readOnly size="small" precision={0.5} sx={{ '& .MuiRating-icon': { fontSize: isMobile ? '14px' : '16px' } }} />
               <Typography variant="caption" sx={{ color: COLORS.gray500, fontSize: isMobile ? '10px' : '11px', fontWeight: 500 }}>
                 ({product.reviewCount || 0})
@@ -525,7 +510,7 @@ const Products = () => {
             </Stack>
 
             {/* Price - No discount display */}
-            <Stack direction="row" alignItems="baseline" spacing={1} sx={{ mb: 2, minHeight: '36px' }}>
+            <Stack direction="row" alignItems="baseline" justifyContent="center" spacing={1} sx={{ mb: 2, minHeight: '36px' }}>
               <Typography sx={{ fontWeight: 800, fontSize: isMobile ? '20px' : '24px', color: COLORS.primary, fontFamily: 'Oswald' }}>
                 {currentPrice} TND
               </Typography>
@@ -533,7 +518,7 @@ const Products = () => {
 
             {/* Size Selector */}
             {availableSizes.length > 0 && (
-              <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap', gap: 1, minHeight: '36px' }}>
+              <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap', gap: 1, minHeight: '36px', justifyContent: 'center' }}>
                 {sizes.map((size) => {
                   const sizePrice = getProductPrice(product, size);
                   const isAvailable = sizePrice > 0 && availableSizes.includes(size);
@@ -657,15 +642,15 @@ const Products = () => {
     }}>
       <Skeleton variant="rectangular" height={isMobile ? 240 : 280} animation="wave" />
       <CardContent sx={{ p: isMobile ? 2 : 2.5 }}>
-        <Skeleton variant="text" width="40%" height={24} animation="wave" />
-        <Skeleton variant="text" width="85%" height={32} animation="wave" sx={{ mb: 1 }} />
-        <Box sx={{ display: 'flex', gap: 0.5, mb: 1 }}>
+        <Skeleton variant="text" width="40%" height={24} animation="wave" sx={{ mx: 'auto' }} />
+        <Skeleton variant="text" width="85%" height={32} animation="wave" sx={{ mb: 1, mx: 'auto' }} />
+        <Box sx={{ display: 'flex', gap: 0.5, mb: 1, justifyContent: 'center' }}>
           <Skeleton variant="rectangular" width={40} height={22} sx={{ borderRadius: '16px' }} />
           <Skeleton variant="rectangular" width={50} height={22} sx={{ borderRadius: '16px' }} />
           <Skeleton variant="rectangular" width={35} height={22} sx={{ borderRadius: '16px' }} />
         </Box>
-        <Skeleton variant="text" width="50%" height={40} animation="wave" sx={{ mb: 2 }} />
-        <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+        <Skeleton variant="text" width="50%" height={40} animation="wave" sx={{ mb: 2, mx: 'auto' }} />
+        <Stack direction="row" spacing={1} sx={{ mb: 2, justifyContent: 'center' }}>
           <Skeleton variant="rectangular" width={70} height={32} sx={{ borderRadius: '8px' }} />
           <Skeleton variant="rectangular" width={70} height={32} sx={{ borderRadius: '8px' }} />
           <Skeleton variant="rectangular" width={80} height={32} sx={{ borderRadius: '8px' }} />
@@ -928,7 +913,7 @@ const Products = () => {
         {loading ? (
           <Grid container spacing={3}>
             {[...Array(12)].map((_, i) => (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={i} sx={{ display: 'flex' }}>
+              <Grid item xs={6} sm={6} md={4} lg={3} key={i} sx={{ display: 'flex' }}>
                 <ProductSkeleton />
               </Grid>
             ))}
@@ -948,16 +933,27 @@ const Products = () => {
           </Box>
         ) : (
           <>
-            <Grid container spacing={3}>
+            <Grid container spacing={3} justifyContent="center">
               <AnimatePresence>
                 {getCurrentProducts.map((product, index) => (
-                  <Grid item xs={12} sm={6} md={4} lg={3} key={product._id} sx={{ display: 'flex' }}>
+                  <Grid 
+                    item 
+                    xs={6}
+                    sm={6} 
+                    md={4} 
+                    lg={3} 
+                    key={product._id} 
+                    sx={{ 
+                      display: 'flex',
+                      justifyContent: 'center',
+                    }}
+                  >
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
                       transition={{ delay: index * 0.02 }}
-                      style={{ width: '100%', height: '100%' }}
+                      style={{ width: '100%', height: '100%', maxWidth: isMobile ? '100%' : '400px' }}
                     >
                       <ProductCard product={product} />
                     </motion.div>
