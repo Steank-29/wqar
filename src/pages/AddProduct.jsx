@@ -345,7 +345,7 @@ const AddProduct = () => {
     
     // Add images
     images.forEach(image => {
-      formDataToSend.append('images', image.file);
+      formDataToSend.append('replaceImages', 'true');
     });
     
     return formDataToSend;
