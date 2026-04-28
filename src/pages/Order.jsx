@@ -27,6 +27,20 @@ import '@fontsource/oswald';
 // API Configuration
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
+// ✅ Helper function to get full image URL (supports Cloudinary)
+const getFullImageUrl = (imagePath) => {
+  if (!imagePath) return null;
+  
+  // If it's already a full URL (Cloudinary)
+  if (imagePath.startsWith('http')) return imagePath;
+  
+  // If it's a local path
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const cleanBaseUrl = baseUrl.replace(/\/api$/, '');
+  const cleanPath = imagePath.replace(/^\/+/, '');
+  return `${cleanBaseUrl}/${cleanPath}`;
+};
+
 // Get token from localStorage
 const getAuthToken = () => {
   return localStorage.getItem('authToken') || localStorage.getItem('token') || sessionStorage.getItem('authToken');
@@ -1023,10 +1037,17 @@ const Orders = () => {
                   <Stack spacing={2}>
                     {selectedOrder.items.map((item, index) => (
                       <Stack key={index} direction="row" alignItems="center" spacing={2}>
+                        {/* ✅ FIXED: Use getFullImageUrl for Cloudinary support */}
                         <Avatar 
-                          src={item.mainImage ? `http://localhost:5000/${item.mainImage}` : null}
+                          src={getFullImageUrl(item.mainImage) || '/placeholder-image.jpg'}
                           variant="rounded"
                           sx={{ width: 50, height: 50, borderRadius: '8px' }}
+                          imgProps={{
+                            onError: (e) => {
+                              e.target.onerror = null;
+                              e.target.src = '/placeholder-image.jpg';
+                            }
+                          }}
                         >
                           <Inventory />
                         </Avatar>
@@ -1190,7 +1211,7 @@ const Orders = () => {
             disabled={processing}
             sx={{ borderRadius: '50px' }}
           >
-            {processing ? <CircularProgress size={24} /> : 'Cancel Order'}
+            {processing ? <CircularProgress size='24' /> : 'Cancel Order'}
           </Button>
         </DialogActions>
       </Dialog>

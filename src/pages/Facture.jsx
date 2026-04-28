@@ -60,6 +60,20 @@ import '@fontsource/oswald';
 // API Configuration
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
+// ✅ Helper function to get full image URL (supports Cloudinary)
+const getFullImageUrl = (imagePath) => {
+  if (!imagePath) return null;
+  
+  // If it's already a full URL (Cloudinary)
+  if (imagePath.startsWith('http')) return imagePath;
+  
+  // If it's a local path
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const cleanBaseUrl = baseUrl.replace(/\/api$/, '');
+  const cleanPath = imagePath.replace(/^\/+/, '');
+  return `${cleanBaseUrl}/${cleanPath}`;
+};
+
 const getAuthToken = () => {
   return localStorage.getItem('authToken') || localStorage.getItem('token') || sessionStorage.getItem('authToken');
 };
@@ -877,7 +891,7 @@ const Facture = () => {
               </Grid>
             </Grid>
 
-            {/* Order Items Table */}
+            {/* Order Items Table - ✅ FIXED: Use getFullImageUrl for Cloudinary */}
             <Box sx={{ mb: 4 }}>
               <SectionTitle>DÉTAIL DE LA COMMANDE</SectionTitle>
               <TableContainer component={Paper} sx={{ 
@@ -901,13 +915,19 @@ const Facture = () => {
                         <TableCell>
                           <Stack direction="row" alignItems="center" spacing={2}>
                             <Avatar 
-                              src={item.mainImage ? `http://localhost:5000/${item.mainImage}` : null}
+                              src={getFullImageUrl(item.mainImage) || '/placeholder-image.jpg'}
                               variant="rounded"
                               sx={{ 
                                 width: 48, 
                                 height: 48, 
                                 borderRadius: '10px',
                                 bgcolor: COLORS.gray100,
+                              }}
+                              imgProps={{
+                                onError: (e) => {
+                                  e.target.onerror = null;
+                                  e.target.src = '/placeholder-image.jpg';
+                                }
                               }}
                             >
                               {!item.mainImage && <Inventory sx={{ color: COLORS.gray400 }} />}

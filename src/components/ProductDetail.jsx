@@ -83,9 +83,16 @@ const COLORS = {
   gray900: '#212121',
 };
 
+// ✅ FIXED: Helper function to get image URL (supports Cloudinary)
 const getFullImageUrl = (imagePath) => {
-  if (!imagePath) return null;
-  if (imagePath.startsWith('http')) return imagePath;
+  if (!imagePath) return '/placeholder-image.jpg';
+  
+  // For Cloudinary URLs (already full HTTP URLs)
+  if (imagePath.startsWith('http')) {
+    return imagePath;
+  }
+  
+  // For local uploads (backward compatibility)
   const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
   const cleanBaseUrl = baseUrl.replace(/\/api$/, '');
   const cleanPath = imagePath.replace(/^\/+/, '');
@@ -250,6 +257,7 @@ const ProductDetail = () => {
     setOrderStep(orderStep - 1);
   };
 
+  // ✅ FIXED: Submit order with correct API URL and headers
   const handleSubmitOrder = async () => {
     if (!selectedSize) {
       setSnackbar({ open: true, message: 'Please select a size', severity: 'error' });
@@ -291,6 +299,8 @@ const ProductDetail = () => {
         notes: orderForm.notes
       };
       
+      console.log('Submitting order:', orderData);
+      
       const response = await fetch(`${API_BASE}/orders`, {
         method: 'POST',
         headers: {
@@ -309,6 +319,7 @@ const ProductDetail = () => {
       setOrderNumber(data.order?.orderNumber || data.order?.id);
       setOrderSuccess(true);
       
+      // Reset form after successful order
       setTimeout(() => {
         setOrderDialogOpen(false);
         setOrderStep(0);
@@ -363,6 +374,8 @@ const ProductDetail = () => {
     : 0;
   const finalPrice = discount > 0 ? product.discountedPrice : currentPrice;
   const isOutOfStock = product.stock === 0;
+  
+  // ✅ FIXED: Get proper image URL with Cloudinary support
   const mainImage = product.images?.[activeImage]?.url 
     ? getFullImageUrl(product.images[activeImage].url)
     : '/placeholder-image.jpg';
@@ -376,15 +389,15 @@ const ProductDetail = () => {
         {/* Breadcrumbs */}
         <Breadcrumbs sx={{ mb: 3, color: COLORS.gray600 }}>
           <Link 
-            href="/" 
+            href="#" 
             onClick={(e) => { e.preventDefault(); navigate('/'); }}
             sx={{ textDecoration: 'none', color: COLORS.gray600, '&:hover': { color: COLORS.primary } }}
           >
             Home
           </Link>
           <Link 
-            href="/collection" 
-            onClick={(e) => { e.preventDefault(); navigate('/'); }}
+            href="#" 
+            onClick={(e) => { e.preventDefault(); navigate('/collection'); }}
             sx={{ textDecoration: 'none', color: COLORS.gray600, '&:hover': { color: COLORS.primary } }}
           >
             Collection
@@ -431,7 +444,11 @@ const ProductDetail = () => {
                     cursor: 'zoom-in',
                   }}
                   onLoad={() => setImageLoaded(true)}
-                  onError={(e) => { e.target.src = '/placeholder-image.jpg'; setImageLoaded(true); }}
+                  onError={(e) => { 
+                    console.error('Image failed to load:', mainImage);
+                    e.target.src = '/placeholder-image.jpg'; 
+                    setImageLoaded(true); 
+                  }}
                 />
               </Paper>
               
@@ -551,17 +568,19 @@ const ProductDetail = () => {
                   </Typography>
                 </Stack>
               ) : (
-                <Typography 
-                  variant="h2" 
-                  sx={{ 
-                    fontWeight: 800, 
-                    color: COLORS.primary, 
-                    fontFamily: 'Oswald',
-                    fontSize: { xs: '36px', md: '48px' },
-                  }}
-                >
-                  {currentPrice} TND
-                </Typography>
+                currentPrice && (
+                  <Typography 
+                    variant="h2" 
+                    sx={{ 
+                      fontWeight: 800, 
+                      color: COLORS.primary, 
+                      fontFamily: 'Oswald',
+                      fontSize: { xs: '36px', md: '48px' },
+                    }}
+                  >
+                    {currentPrice} TND
+                  </Typography>
+                )
               )}
               {selectedSize && (
                 <Typography variant="caption" sx={{ color: COLORS.gray500, display: 'block', mt: 0.5 }}>

@@ -72,9 +72,12 @@ const COLORS = {
   gray900: '#212121',
 };
 
+// ✅ FIXED: Helper function to get image URL (supports Cloudinary)
 const getFullImageUrl = (imagePath) => {
   if (!imagePath) return null;
+  // For Cloudinary URLs (already full HTTP URLs)
   if (imagePath.startsWith('http')) return imagePath;
+  // For local uploads (backward compatibility)
   const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
   const cleanBaseUrl = baseUrl.replace(/\/api$/, '');
   const cleanPath = imagePath.replace(/^\/+/, '');
@@ -161,12 +164,12 @@ const Products = () => {
 
   const sizes = ['30ml', '50ml', '100ml'];
 
-  // Load products on mount - FIXED to not cause infinite refresh
+  // Load products on mount
   useEffect(() => {
     loadProducts();
   }, []);
 
-  // Apply filters when dependencies change - FIXED with useCallback
+  // Apply filters when dependencies change
   useEffect(() => {
     const applyFilters = () => {
       let filtered = [...products];
@@ -243,6 +246,7 @@ const Products = () => {
       setPriceRange([0, finalMaxPrice]);
     } catch (error) {
       console.error('Error loading products:', error);
+      setSnackbar({ open: true, message: 'Error loading products', severity: 'error' });
     } finally {
       setLoading(false);
     }
@@ -305,7 +309,7 @@ const Products = () => {
 
   const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
 
-  // Product Card Component
+  // Product Card Component - ✅ FIXED with proper key handling
   const ProductCard = useCallback(({ product }) => {
     const [hovered, setHovered] = useState(false);
     const [selectedSize, setSelectedSize] = useState(() => {
@@ -398,6 +402,7 @@ const Products = () => {
                 transform: hovered ? 'scale(1.05)' : 'scale(1)',
               }}
               onError={(e) => { 
+                console.error('Image failed to load:', imageUrl);
                 e.target.src = '/placeholder-image.jpg';
                 e.target.style.objectFit = 'contain';
               }}
@@ -468,12 +473,12 @@ const Products = () => {
               {product.name}
             </Typography>
 
-            {/* Fragrance Notes as Chips - NEW */}
+            {/* Fragrance Notes as Chips - ✅ FIXED with proper key */}
             {fragranceNotes.length > 0 && (
               <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 1, minHeight: '40px', justifyContent: 'center' }}>
                 {fragranceNotes.slice(0, 3).map((note, idx) => (
                   <Chip
-                    key={idx}
+                    key={`${product._id}-note-${idx}`} // ✅ Fixed: unique key
                     label={note}
                     size="small"
                     variant="outlined"
@@ -488,6 +493,7 @@ const Products = () => {
                 ))}
                 {fragranceNotes.length > 3 && (
                   <Chip
+                    key={`${product._id}-more`} // ✅ Fixed: unique key
                     label={`+${fragranceNotes.length - 3}`}
                     size="small"
                     variant="outlined"
@@ -516,7 +522,7 @@ const Products = () => {
               </Typography>
             </Stack>
 
-            {/* Size Selector */}
+            {/* Size Selector - ✅ Fixed with proper key */}
             {availableSizes.length > 0 && (
               <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap', gap: 1, minHeight: '36px', justifyContent: 'center' }}>
                 {sizes.map((size) => {
@@ -525,7 +531,7 @@ const Products = () => {
                   
                   return (
                     <Button
-                      key={size}
+                      key={`${product._id}-size-${size}`} // ✅ Fixed: unique key
                       variant={selectedSize === size ? 'contained' : 'outlined'}
                       size="small"
                       onClick={(e) => {
@@ -630,7 +636,7 @@ const Products = () => {
         </Card>
       </Zoom>
     );
-  }, [isMobile, isTablet, wishlist, getCartItem, handleAddToCart, handleUpdateQuantity, navigate, toggleWishlist]);
+  }, [isMobile, isTablet, getCartItem, navigate]);
 
   // Skeleton Loader
   const ProductSkeleton = () => (
@@ -913,7 +919,7 @@ const Products = () => {
         {loading ? (
           <Grid container spacing={3}>
             {[...Array(12)].map((_, i) => (
-              <Grid item xs={6} sm={6} md={4} lg={3} key={i} sx={{ display: 'flex' }}>
+              <Grid item xs={6} sm={6} md={4} lg={3} key={`skeleton-${i}`} sx={{ display: 'flex' }}>
                 <ProductSkeleton />
               </Grid>
             ))}

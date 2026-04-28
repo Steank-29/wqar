@@ -109,9 +109,19 @@ const DropzoneContainer = styled(Box)(({ theme, isDragActive }) => ({
 // Helper function to get image URL
 const getImageUrl = (imagePath) => {
   if (!imagePath) return '/placeholder-image.jpg';
-  if (imagePath.startsWith('http')) return imagePath;
-  if (imagePath.startsWith('uploads/')) return `https://wqar-api.onrender.com/${imagePath}`;
-  return `https://wqar-api.onrender.com/${imagePath}`;
+  
+  // For Cloudinary URLs (always start with http and contain 'cloudinary')
+  if (imagePath.startsWith('http')) {
+    return imagePath;
+  }
+  
+  // For backward compatibility with old local uploads
+  if (imagePath.startsWith('uploads/')) {
+    return `https://wqar-api.onrender.com/${imagePath}`;
+  }
+  
+  // For relative paths
+  return imagePath;
 };
 
 // Helper function to get product price for a specific size
@@ -583,12 +593,11 @@ const AddProduct = () => {
       category: product.category || 'Perfumes',
     });
     // Set preview images from product images
-    if (product.images && product.images.length > 0) {
-      const imageUrls = product.images.map(img => getImageUrl(img.url));
-      setPreviewImages(imageUrls);
-      // Also set the images state for editing
-      setImages([]); // Reset images state, existing images are already on server
-    }
+   if (product.images && product.images.length > 0) {
+  const imageUrls = product.images.map(img => getImageUrl(img.url));
+  setPreviewImages(imageUrls);
+  setImages([]);
+}
     setOpenDialog(true);
   };
 
